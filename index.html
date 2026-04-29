@@ -1,0 +1,5307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pulse">
+<meta name="theme-color" content="#000000">
+<!-- App icon for home screen: rounded black tile with bold heartbeat + yellow pulse dot -->
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23000000'/%3E%3Cpath d='M30 92 L60 92 L72 56 L94 138 L106 92 L150 92' stroke='%23FAFAFA' stroke-width='13' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='150' cy='92' r='9' fill='%23E8FF7A'/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23000000'/%3E%3Cpath d='M30 92 L60 92 L72 56 L94 138 L106 92 L150 92' stroke='%23FAFAFA' stroke-width='13' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='150' cy='92' r='9' fill='%23E8FF7A'/%3E%3C/svg%3E">
+<title>Pulse — Spending</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #000000;
+    --bg-2:      #0E0E0E;
+    --bg-3:      #161616;
+    --bg-4:      #1F1F1F;
+    --line:      #1A1A1A;
+    --line-2:    #262626;
+    --fg:        #FAFAFA;
+    --fg-2:      #B5B5B5;
+    --fg-3:      #7A7A7A;
+    --fg-4:      #4A4A4A;
+    --fg-5:      #2A2A2A;
+    --accent:    #E8FF7A;     /* the yellow accent — used surgically */
+    --good:      #5DD49B;
+    --warn:      #FFB454;
+    --radius:    14px;
+    --radius-sm: 10px;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0; padding: 0;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 15px;
+    line-height: 1.45;
+    overflow-x: hidden;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+    min-height: 100vh;
+  }
+
+  .app {
+    max-width: 540px;
+    margin: 0 auto;
+    padding: 0 18px;
+    position: relative;
+  }
+
+  /* ========================================================
+     TOP NAV — bold brand with status pulse
+     ======================================================== */
+  .topnav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 0 14px;
+    min-height: 60px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: opacity 0.15s;
+  }
+  .brand:active { opacity: 0.6; }
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    background: var(--bg);
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .brand-mark svg {
+    width: 26px; height: 26px;
+    stroke: var(--fg);
+    stroke-width: 2.5;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    overflow: visible;
+  }
+  .brand-mark .pulse-dot {
+    fill: var(--accent);
+    stroke: none;
+    animation: pulseDot 2s ease-in-out infinite;
+  }
+  @keyframes pulseDot {
+    0%, 100% { opacity: 1; transform-origin: center; }
+    50% { opacity: 0.45; }
+  }
+  .brand-name {
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: -0.8px;
+    color: var(--fg);
+    line-height: 1;
+  }
+  .brand-tagline {
+    font-size: 9px;
+    color: var(--fg-3);
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin-top: 3px;
+    line-height: 1;
+  }
+  .brand-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .topnav-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+  .topnav-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    background: var(--bg-3);
+    border-radius: 100px;
+    font-size: 10px;
+    color: var(--fg-2);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .topnav-status .live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--good);
+    animation: pulseDot 2s ease-in-out infinite;
+  }
+  .topnav-date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--fg-3);
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  /* ========================================================
+     HERO — the big number
+     ======================================================== */
+  .hero {
+    padding: 32px 0 20px;
+  }
+  .hero-eyebrow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .hero-label {
+    font-size: 12px;
+    color: var(--fg-3);
+    font-weight: 500;
+    letter-spacing: -0.1px;
+  }
+  .hero-trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    background: var(--bg-3);
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--fg-2);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: -0.2px;
+  }
+  .hero-trend .arrow { font-size: 10px; }
+
+  .hero-number {
+    font-size: 68px;
+    font-weight: 700;
+    line-height: 0.95;
+    letter-spacing: -3.5px;
+    color: var(--fg);
+    font-variant-numeric: tabular-nums;
+    display: flex;
+    align-items: baseline;
+    gap: 1px;
+    margin-bottom: 12px;
+  }
+  .hero-number .dollar {
+    font-weight: 500;
+    color: var(--fg-3);
+    font-size: 36px;
+    letter-spacing: -1.5px;
+    transform: translateY(-18px);
+    margin-right: 2px;
+  }
+  .hero-number .cents {
+    font-weight: 500;
+    color: var(--fg-3);
+    font-size: 30px;
+    letter-spacing: -1px;
+  }
+
+  .hero-sub {
+    font-size: 14px;
+    color: var(--fg-2);
+    line-height: 1.5;
+    max-width: 360px;
+    font-weight: 400;
+  }
+  .hero-sub strong {
+    color: var(--fg);
+    font-weight: 600;
+  }
+  .hero-sub .accent {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* Pace track — subtle line */
+  .pace {
+    margin-top: 24px;
+  }
+  .pace-track {
+    height: 6px;
+    background: var(--bg-3);
+    border-radius: 100px;
+    position: relative;
+    overflow: hidden;
+  }
+  .pace-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: var(--fg);
+    border-radius: 100px;
+    transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .pace-fill.over {
+    background: var(--accent);
+  }
+  .pace-marker {
+    position: absolute;
+    top: -3px;
+    width: 2px;
+    height: 12px;
+    background: var(--fg);
+    border-radius: 2px;
+    transition: left 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .pace-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--fg-3);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .pace-labels strong {
+    color: var(--fg);
+    font-weight: 600;
+  }
+
+  /* ========================================================
+     KPI CARDS — three pill cards
+     ======================================================== */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 24px 0 8px;
+  }
+  .kpi {
+    background: var(--bg-3);
+    border-radius: var(--radius);
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 88px;
+  }
+  .kpi-label {
+    font-size: 11px;
+    color: var(--fg-3);
+    font-weight: 500;
+    letter-spacing: -0.1px;
+  }
+  .kpi-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.05;
+    letter-spacing: -1px;
+    font-variant-numeric: tabular-nums;
+  }
+  .kpi-delta {
+    font-size: 10px;
+    color: var(--fg-3);
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: -0.1px;
+  }
+  .kpi-delta strong {
+    color: var(--fg-2);
+    font-weight: 600;
+  }
+  .kpi-delta.warn strong { color: var(--accent); }
+
+  /* ========================================================
+     SECTION HEADERS
+     ======================================================== */
+  .sec-head {
+    padding: 32px 0 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .sec-head h2 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    color: var(--fg);
+    line-height: 1;
+  }
+  .sec-head .h-meta {
+    font-size: 12px;
+    color: var(--fg-3);
+    font-weight: 500;
+  }
+
+  /* ========================================================
+     MOVERS — list of category cards
+     ======================================================== */
+  .movers {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .mover {
+    background: var(--bg-3);
+    border-radius: var(--radius);
+    padding: 16px 16px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    gap: 4px 14px;
+    align-items: center;
+  }
+  .mover-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--fg);
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+  }
+  .mover-amt {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--fg);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.3px;
+  }
+  .mover-meta {
+    font-size: 12px;
+    color: var(--fg-3);
+    font-weight: 500;
+  }
+  .mover-pct {
+    font-size: 12px;
+    color: var(--fg-3);
+    text-align: right;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .mover-pct.over { color: var(--accent); font-weight: 600; }
+  .mover-bar {
+    grid-column: 1 / -1;
+    height: 3px;
+    background: var(--bg-4);
+    border-radius: 100px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .mover-bar > span {
+    display: block;
+    height: 100%;
+    background: var(--fg);
+    border-radius: 100px;
+    transition: width 0.5s ease;
+  }
+  .mover-bar > span.over {
+    background: var(--accent);
+  }
+
+  /* ========================================================
+     CARDS — credit card pills
+     ======================================================== */
+  .card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* Networth strip — three tiles at top of Cards tab */
+  .networth {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .nw-card {
+    background: var(--bg-3);
+    border-radius: var(--radius);
+    padding: 14px 12px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+    -webkit-user-select: none;
+    user-select: none;
+    min-height: 88px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .nw-card:active { background: var(--bg-4); transform: scale(0.985); }
+  .nw-label {
+    font-size: 10px;
+    color: var(--fg-3);
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+  .nw-value {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--fg);
+    letter-spacing: -0.7px;
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+  }
+  .nw-card.warn .nw-value { color: var(--accent); }
+  .nw-card.warn { background: rgba(232, 255, 122, 0.05); }
+  .nw-sub {
+    font-size: 10px;
+    color: var(--fg-3);
+    font-weight: 500;
+    letter-spacing: -0.1px;
+    margin-top: auto;
+  }
+
+  /* Bank account row */
+  .bank-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .bank {
+    background: var(--bg-3);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    gap: 14px;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .bank:active { background: var(--bg-4); transform: scale(0.99); }
+  .bank-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    background: var(--bg-4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--fg-2);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: -0.3px;
+  }
+  .bank-icon.checking { background: linear-gradient(135deg, #0A3A6F, #0F4C8A); color: #fff; }
+  .bank-icon.savings { background: linear-gradient(135deg, #1B5C3A, #2A7A50); color: #fff; }
+  .bank-info { min-width: 0; }
+  .bank-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fg);
+    letter-spacing: -0.2px;
+    line-height: 1.2;
+  }
+  .bank-meta {
+    font-size: 11px;
+    color: var(--fg-3);
+    font-weight: 500;
+    margin-top: 3px;
+  }
+  .bank-amt {
+    text-align: right;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--fg);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.5px;
+  }
+
+  /* ===== Mini visual card thumbnail (in card list rows) ===== */
+  .card-visual {
+    width: 56px;
+    height: 36px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  .card-visual::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--cv-grad, linear-gradient(135deg, #1F1F1F, #2D2D2D));
+    z-index: 0;
+  }
+  .card-visual::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 60%;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.3));
+    z-index: 1;
+  }
+  .card-visual .cv-chip {
+    position: absolute;
+    top: 7px;
+    left: 6px;
+    width: 10px;
+    height: 7px;
+    background: linear-gradient(135deg, #C9B27E, #8C7A4A);
+    border-radius: 1.5px;
+    z-index: 2;
+  }
+  .card-visual .cv-network {
+    position: absolute;
+    bottom: 4px;
+    right: 5px;
+    z-index: 2;
+    display: flex;
+    gap: 1px;
+  }
+  .card-visual .cv-network .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #fff;
+    opacity: 0.8;
+  }
+  .card-visual .cv-network .dot:last-child { background: #F79E1B; opacity: 0.9; }
+  .card-visual.visa .cv-network .dot { background: #fff; opacity: 0.9; }
+  .card-visual.visa .cv-network .dot:last-child { background: #F79E1B; opacity: 0; display:none; }
+  .card-visual.visa .cv-text {
+    position: absolute;
+    bottom: 4px;
+    right: 5px;
+    z-index: 2;
+    font-family: serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: 8px;
+    color: #fff;
+    letter-spacing: -0.3px;
+    text-transform: uppercase;
+  }
+  .card-visual .cv-last {
+    position: absolute;
+    top: 7px;
+    right: 6px;
+    z-index: 2;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7px;
+    color: rgba(255,255,255,0.7);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+
+  .ccard {
+    background: var(--bg-3);
+    border-radius: var(--radius);
+    padding: 18px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .ccard-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .ccard-head-left {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    flex: 1;
+    min-width: 0;
+  }
+  .ccard-statement {
+    font-size: 11px;
+    color: var(--fg-3);
+    font-weight: 500;
+    margin-top: 6px;
+    letter-spacing: -0.1px;
+  }
+  .ccard-statement strong { color: var(--accent); font-weight: 600; }
+  .ccard-name-block {
+    flex: 1;
+    min-width: 0;
+  }
+  .ccard-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--fg);
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+  }
+  .ccard-issuer {
+    font-size: 11px;
+    color: var(--fg-3);
+    font-weight: 500;
+    margin-top: 4px;
+    letter-spacing: -0.1px;
+  }
+  .ccard-spend {
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .ccard-spend .amt {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--fg);
+    letter-spacing: -0.8px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .ccard-spend .meta {
+    font-size: 11px;
+    color: var(--fg-3);
+    font-weight: 500;
+    margin-top: 3px;
+  }
+
+  /* Card breakdown bar */
+  .ccard-bar {
+    display: flex;
+    height: 4px;
+    background: var(--bg-4);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+  .ccard-bar > div {
+    height: 100%;
+    transition: width 0.5s ease;
+  }
+  .seg-1 { background: var(--fg); }
+  .seg-2 { background: var(--fg-2); }
+  .seg-3 { background: var(--fg-3); }
+  .seg-4 { background: var(--fg-4); }
+  .seg-5 { background: var(--fg-5); }
+
+  .ccard-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    font-size: 10px;
+    color: var(--fg-3);
+    font-weight: 500;
+  }
+  .ccard-legend .leg {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ccard-legend .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
+  }
+
+  /* Rewards row at bottom of card */
+  .ccard-rewards {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line-2);
+  }
+  .ccard-rewards .earned {
+    font-size: 12px;
+    color: var(--fg-2);
+    font-weight: 500;
+  }
+  .ccard-rewards .earned strong {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--fg);
+    font-weight: 600;
+  }
+  .ccard-rewards .tip {
+    font-size: 11px;
+    color: var(--fg-3);
+    font-weight: 500;
+    text-align: right;
+  }
+  .ccard-rewards .tip.action {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ========================================================
+     TRENDS — small multiples
+     ======================================================== */
+  /* ========================================================
+     TRENDS — hero chart + insights + bucket rows
+     ======================================================== */
+  .h-sub {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.5px !important;
+    color: var(--fg);
+  }
+
+  .trend-hero {
+    background: var(--bg-3);
+    border-radius: var(--radius);
+    padding: 18px 18px 14px;
+    margin-bottom: 4px;
+  }
+  .trend-hero-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .trend-hero-eyebrow {
+    font-size: 10px;
+    color: var(--fg-3);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+  .trend-hero-toggle {
+    display: flex;
+    background: var(--bg-4);
+    border-radius: 100px;
+    padding: 3px;
+    gap: 0;
+  }
+  .th-tog {
+    background: transparent;
+    border: none;
+    color: var(--fg-3);
+    padding: 5px 12px;
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 100px;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: -0.1px;
+    transition: all 0.15s;
+  }
+  .th-tog.active {
+    background: var(--fg);
+    color: var(--bg);
+  }
+  .trend-hero-value {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .thv-amt {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--fg);
+    letter-spacing: -1.5px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .thv-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 9px;
+    background: var(--bg-4);
+    border-radius: 100px;
+    font-size: 11px;
+    color: var(--fg-2);
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .thv-pill.up { background: var(--accent); color: var(--bg); }
+  .thv-pill.down { background: var(--good); color: var(--bg); }
+  .trend-hero-meta {
+    font-size: 12px;
+    color: var(--fg-3);
+    font-weight: 500;
+    margin-bottom: 18px;
+    letter-spacing: -0.1px;
+  }
+  .trend-hero-chart {
+    height: 140px;
+    width: 100%;
+    position: relative;
+  }
+  .trend-hero-chart svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  /* Insights */
+  .insights {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .insight {
+    background: var(--bg-3);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: 32px 1fr auto;
+    gap: 12px;
+    align-items: center;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: background 0.15s, transform 0.15s;
+  }
+  .insight:active {
+    background: var(--bg-4);
+    transform: scale(0.99);
+  }
+  .insight-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .insight-icon.up { background: rgba(232, 255, 122, 0.15); color: var(--accent); }
+  .insight-icon.down { background: rgba(93, 212, 155, 0.15); color: var(--good); }
+  .insight-icon.flat { background: var(--bg-4); color: var(--fg-3); }
+  .insight-icon svg {
+    width: 16px; height: 16px;
+    fill: currentColor;
+  }
+  .insight-body { min-width: 0; }
+  .insight-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fg);
+    letter-spacing: -0.2px;
+    line-height: 1.3;
+  }
+  .insight-sub {
+    font-size: 11px;
+    color: var(--fg-3);
+    font-weight: 500;
+    margin-top: 3px;
+  }
+  .insight-amt {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--fg);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.3px;
+  }
+  .insight-amt.up { color: var(--accent); }
+  .insight-amt.down { color: var(--good); }
+
+  /* Bucket rows — horizontal sparkline cards */
+  .trend-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .trow {
+    background: var(--bg-3);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: 1fr 110px auto;
+    gap: 14px;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .trow:active { background: var(--bg-4); transform: scale(0.99); }
+  .trow-info { min-width: 0; }
+  .trow-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fg);
+    letter-spacing: -0.2px;
+    line-height: 1.2;
+  }
+  .trow-meta {
+    font-size: 11px;
+    color: var(--fg-3);
+    font-weight: 500;
+    margin-top: 3px;
+    font-variant-numeric: tabular-nums;
+  }
+  .trow-spark {
+    height: 36px;
+    width: 100%;
+  }
+  .trow-spark svg { width: 100%; height: 100%; overflow: visible; }
+  .trow-amt {
+    text-align: right;
+    min-width: 52px;
+  }
+  .trow-amt .now {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--fg);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.3px;
+    line-height: 1.1;
+  }
+  .trow-amt .delta {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--fg-3);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 3px;
+  }
+  .trow-amt .delta.up { color: var(--accent); }
+  .trow-amt .delta.down { color: var(--good); }
+
+  /* Top categories (sparkline rows) — same as bucket rows */
+  .trend-cats {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* ========================================================
+     ACTIVITY — transactions grouped by day
+     ======================================================== */
+  .activity {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .day-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .day-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+    padding: 0 4px;
+  }
+  .day-date {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg);
+    letter-spacing: -0.3px;
+  }
+  .day-date .day-name {
+    color: var(--fg-3);
+    font-weight: 400;
+    margin-left: 8px;
+  }
+  .day-total {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg-2);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .day-txns {
+    background: var(--bg-3);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .txn {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 12px;
+    padding: 14px 16px;
+    align-items: baseline;
+    border-bottom: 1px solid var(--line);
+  }
+  .txn:last-child { border-bottom: none; }
+  .txn-merchant {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--fg);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    letter-spacing: -0.1px;
+  }
+  .txn-amt {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fg);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.2px;
+  }
+  .txn-meta {
+    grid-column: 1 / -1;
+    font-size: 11px;
+    color: var(--fg-3);
+    font-weight: 500;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .txn-meta .sep {
+    width: 2px; height: 2px;
+    background: var(--fg-4);
+    border-radius: 50%;
+  }
+  .txn-meta .card-tag {
+    color: var(--fg-2);
+    font-weight: 500;
+  }
+
+  /* ========================================================
+     TAB BAR — fixed bottom, pill-style
+     ======================================================== */
+  .tabbar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-top: 1px solid var(--line);
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tabbar-inner {
+    max-width: 540px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    padding: 8px 12px;
+    gap: 4px;
+  }
+  .tab {
+    background: none;
+    border: none;
+    padding: 10px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--fg-4);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    border-radius: var(--radius-sm);
+    letter-spacing: -0.1px;
+  }
+  .tab .icon {
+    width: 22px; height: 22px;
+    display: block;
+  }
+  .tab .icon svg {
+    width: 100%; height: 100%;
+    stroke: var(--fg-4);
+    stroke-width: 2;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: stroke 0.2s;
+  }
+  .tab.active { color: var(--fg); }
+  .tab.active .icon svg { stroke: var(--fg); }
+  .tab:active { background: var(--bg-3); }
+
+  /* ========================================================
+     SCREEN VISIBILITY
+     ======================================================== */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* Setup */
+  .setup {
+    background: var(--bg-3);
+    border-radius: var(--radius);
+    padding: 22px;
+    margin: 24px 0;
+  }
+  .setup h3 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+    color: var(--fg);
+  }
+  .setup p {
+    font-size: 13px;
+    color: var(--fg-2);
+    line-height: 1.55;
+    margin-bottom: 16px;
+  }
+  .setup p em {
+    color: var(--fg-3);
+    font-style: normal;
+    font-size: 11px;
+  }
+  .setup input {
+    width: 100%;
+    padding: 14px 14px;
+    border: 1px solid var(--line-2);
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+  }
+  .setup input:focus {
+    outline: none;
+    border-color: var(--fg-3);
+  }
+  .setup button {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    padding: 14px 26px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.1px;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    width: 100%;
+  }
+  .setup button:active {
+    opacity: 0.8;
+    transform: scale(0.98);
+  }
+
+  .empty {
+    background: var(--bg-3);
+    border-radius: var(--radius);
+    padding: 56px 20px;
+    text-align: center;
+    color: var(--fg-3);
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .err {
+    background: var(--bg-3);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 16px;
+    color: var(--fg);
+    font-size: 13px;
+    margin: 12px 0;
+    line-height: 1.5;
+  }
+  .err strong { color: var(--accent); }
+
+  /* Animations */
+  .reveal {
+    animation: reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  @keyframes reveal {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* ========================================================
+     CARD TAPPABILITY — make ccards feel pressable
+     ======================================================== */
+  .ccard {
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: background 0.15s, transform 0.15s;
+    position: relative;
+  }
+  .ccard:active {
+    background: var(--bg-4);
+    transform: scale(0.985);
+  }
+  .ccard::after {
+    content: '';
+    position: absolute;
+    top: 22px; right: 18px;
+    width: 6px; height: 6px;
+    border-right: 1.5px solid var(--fg-4);
+    border-bottom: 1.5px solid var(--fg-4);
+    transform: rotate(-45deg);
+    pointer-events: none;
+  }
+
+  /* ========================================================
+     DRILL-DOWN SHEET — slides up from bottom
+     ======================================================== */
+  .dd-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 199;
+  }
+  .dd-backdrop.show { opacity: 1; pointer-events: auto; }
+
+  .dd-sheet {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--bg);
+    border-top-left-radius: 22px;
+    border-top-right-radius: 22px;
+    transform: translateY(100%);
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    z-index: 200;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 -20px 60px rgba(0,0,0,0.6);
+    border-top: 1px solid var(--line-2);
+  }
+  .dd-sheet.open { transform: translateY(0); }
+
+  .dd-grabber-wrap {
+    flex-shrink: 0;
+    padding: 10px 0 4px;
+    display: flex;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .dd-grabber {
+    width: 38px;
+    height: 4px;
+    background: var(--fg-4);
+    border-radius: 100px;
+  }
+  .dd-close {
+    position: absolute;
+    top: 14px; right: 16px;
+    width: 32px; height: 32px;
+    background: var(--bg-3);
+    border: none;
+    border-radius: 50%;
+    color: var(--fg-2);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+  }
+  .dd-close:active { background: var(--bg-4); }
+
+  .dd-back {
+    position: absolute;
+    top: 14px; left: 16px;
+    width: 32px; height: 32px;
+    background: var(--bg-3);
+    border: none;
+    border-radius: 50%;
+    color: var(--fg-2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+  }
+  .dd-back:active { background: var(--bg-4); }
+  .dd-back[style*="display:none"],
+  .dd-back[style*="display: none"] { display: none !important; }
+
+  /* Link-styled inline taps inside drilldowns */
+  .dd-link {
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: opacity 0.15s;
+    color: var(--fg-2);
+    text-decoration: none;
+  }
+  .dd-link:active { opacity: 0.5; }
+  .dd-link-inline {
+    display: inline;
+    cursor: pointer;
+    color: var(--fg-2);
+    border-bottom: 1px dotted var(--fg-4);
+    padding-bottom: 1px;
+  }
+  .dd-link-inline:active { color: var(--fg); }
+
+  .dd-day-bar-tap {
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .dd-day-bar-tap:active { opacity: 0.6; }
+  .dd-day-bar-tap:active .dd-day-fill { background: var(--accent); }
+
+  .dd-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 18px calc(40px + env(safe-area-inset-bottom)) 18px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dd-header {
+    padding: 12px 50px 20px 50px;
+    text-align: center;
+  }
+  .dd-card-name {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -1.2px;
+    line-height: 1.05;
+    color: var(--fg);
+  }
+  .dd-card-issuer {
+    font-size: 12px;
+    color: var(--fg-3);
+    margin-top: 6px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .dd-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-bottom: 22px;
+  }
+  .dd-stat {
+    background: var(--bg-3);
+    border-radius: var(--radius-sm);
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .dd-stat-label {
+    font-size: 10px;
+    color: var(--fg-3);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .dd-stat-val {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--fg);
+    letter-spacing: -0.6px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .dd-stat-val.warn { color: var(--accent); }
+  .dd-stat-val.good { color: var(--good); }
+  .dd-stat-sub {
+    font-size: 10px;
+    color: var(--fg-3);
+    font-weight: 500;
+  }
+
+  .dd-warning {
+    background: var(--bg-3);
+    border-left: 2px solid var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin-bottom: 22px;
+    font-size: 12px;
+    color: var(--fg-2);
+    line-height: 1.5;
+  }
+  .dd-warning strong { color: var(--accent); font-weight: 600; }
+
+  .dd-section { margin-bottom: 28px; }
+  .dd-section-head {
+    font-size: 11px;
+    color: var(--fg-3);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 10px;
+    padding-left: 2px;
+  }
+
+  /* Reward perks */
+  .dd-perks {
+    background: var(--bg-3);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .dd-perk {
+    display: flex;
+    align-items: center;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--line);
+    gap: 14px;
+  }
+  .dd-perk:last-child { border-bottom: none; }
+  .dd-perk-rate {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--fg);
+    min-width: 48px;
+    letter-spacing: -0.3px;
+  }
+  .dd-perk-label {
+    font-size: 13px;
+    color: var(--fg-2);
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  /* Per-category breakdown */
+  .dd-cats {
+    background: var(--bg-3);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .dd-cat-row {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 12px;
+    align-items: baseline;
+  }
+  .dd-cat-row:last-child { border-bottom: none; }
+  .dd-cat-main { display: flex; flex-direction: column; gap: 2px; }
+  .dd-cat-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fg);
+    letter-spacing: -0.2px;
+  }
+  .dd-cat-meta {
+    font-size: 11px;
+    color: var(--fg-3);
+    font-weight: 500;
+  }
+  .dd-cat-amt { text-align: right; }
+  .dd-cat-spent {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--fg);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.2px;
+  }
+  .dd-cat-earned {
+    font-size: 11px;
+    color: var(--good);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .dd-cat-earned.sub { color: var(--fg-3); }
+  .dd-cat-swap {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: var(--bg-4);
+    border-radius: 8px;
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* Transaction list */
+  .dd-txns {
+    background: var(--bg-3);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .dd-txn {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    align-items: center;
+  }
+  .dd-txn:last-child { border-bottom: none; }
+  .dd-txn-date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-3);
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+  .dd-txn-main { min-width: 0; }
+  .dd-txn-merch {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--fg);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    letter-spacing: -0.1px;
+  }
+  .dd-txn-cat {
+    font-size: 10px;
+    color: var(--fg-3);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+  .dd-txn-amts { text-align: right; }
+  .dd-txn-amt {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.2px;
+  }
+  .dd-txn-rate {
+    font-size: 10px;
+    color: var(--good);
+    font-weight: 500;
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .dd-empty {
+    padding: 28px;
+    text-align: center;
+    color: var(--fg-3);
+    font-size: 13px;
+    background: var(--bg-3);
+    border-radius: var(--radius);
+  }
+
+  /* ========================================================
+     BRIEFING — audio summary player
+     ======================================================== */
+  .briefing {
+    margin: 26px 0 8px;
+    background: var(--bg-3);
+    border-radius: var(--radius);
+    padding: 18px 18px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .briefing::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.4;
+  }
+  .briefing-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .briefing-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 10px;
+    color: var(--accent);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+  .briefing-eyebrow-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulseDot 2s ease-in-out infinite;
+  }
+  .briefing-meta {
+    font-size: 10px;
+    color: var(--fg-3);
+    font-weight: 500;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+  .briefing-body {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .briefing-play {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.15s ease, opacity 0.15s;
+  }
+  .briefing-play:active { transform: scale(0.92); }
+  .briefing-play.playing {
+    background: var(--fg);
+  }
+  .briefing-play svg path { transition: fill 0.2s; }
+  .briefing-text-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+  .briefing-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--fg);
+    letter-spacing: -0.3px;
+    line-height: 1.3;
+  }
+  .briefing-subtitle {
+    font-size: 11px;
+    color: var(--fg-3);
+    font-weight: 500;
+    margin-top: 3px;
+    letter-spacing: -0.1px;
+  }
+  .briefing-progress {
+    margin-top: 14px;
+    height: 3px;
+    background: var(--bg-4);
+    border-radius: 100px;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .briefing-progress.active {
+    opacity: 1;
+  }
+  .briefing-progress-fill {
+    height: 100%;
+    width: 0;
+    background: var(--accent);
+    border-radius: 100px;
+    transition: width 0.3s linear;
+  }
+  .briefing-controls {
+    margin-top: 14px;
+    display: flex;
+    gap: 6px;
+  }
+  .briefing-chip {
+    background: var(--bg-4);
+    border: none;
+    color: var(--fg-3);
+    padding: 6px 12px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: -0.1px;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .briefing-chip.active {
+    background: var(--fg);
+    color: var(--bg);
+  }
+  .briefing-chip:active { transform: scale(0.95); }
+  .briefing-script {
+    margin-top: 14px;
+    padding: 14px;
+    background: var(--bg-4);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--fg-2);
+    line-height: 1.55;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s, padding 0.3s, margin 0.3s;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: 0;
+  }
+  .briefing-script.expanded {
+    max-height: 600px;
+    opacity: 1;
+    padding-top: 14px;
+    padding-bottom: 14px;
+    margin-top: 14px;
+  }
+  .briefing-script .word {
+    transition: color 0.15s;
+  }
+  .briefing-script .word.spoken {
+    color: var(--fg);
+    font-weight: 500;
+  }
+  .briefing-script .word.current {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ========================================================
+     ADDITIONAL DRILL-DOWN ELEMENTS
+     ======================================================== */
+  .dd-amount-hero {
+    background: var(--bg-3);
+    border-radius: var(--radius);
+    padding: 22px 18px;
+    margin-bottom: 18px;
+    text-align: center;
+  }
+  .dd-amount-big {
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--fg);
+    letter-spacing: -2px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .dd-amount-big.warn { color: var(--accent); }
+  .dd-amount-meta {
+    font-size: 12px;
+    color: var(--fg-2);
+    font-weight: 500;
+    margin-top: 8px;
+    letter-spacing: -0.1px;
+  }
+
+  .dd-explainer {
+    background: var(--bg-3);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    font-size: 13px;
+    color: var(--fg-2);
+    line-height: 1.6;
+  }
+  .dd-explainer strong {
+    color: var(--fg);
+    font-weight: 600;
+  }
+
+  .dd-pace-card {
+    background: var(--bg-3);
+    border-radius: var(--radius);
+    padding: 18px;
+  }
+  .dd-pace-track {
+    height: 6px;
+    background: var(--bg-4);
+    border-radius: 100px;
+    position: relative;
+    overflow: hidden;
+  }
+  .dd-pace-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: var(--fg);
+    border-radius: 100px;
+    transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .dd-pace-fill.over { background: var(--accent); }
+  .dd-pace-marker {
+    position: absolute;
+    top: -3px;
+    width: 2px;
+    height: 12px;
+    background: var(--fg);
+    border-radius: 2px;
+  }
+  .dd-pace-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 14px;
+    font-size: 11px;
+    color: var(--fg-3);
+    font-weight: 500;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .dd-pace-meta strong { color: var(--fg); font-weight: 600; }
+
+  .dd-trend-detail {
+    background: var(--bg-3);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .dd-chart-svg {
+    width: 100%;
+    height: auto;
+  }
+
+  .dd-tag {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 7px;
+    background: var(--accent);
+    color: var(--bg);
+    border-radius: 100px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    vertical-align: middle;
+  }
+  .dd-tag.dim {
+    background: var(--bg-4);
+    color: var(--fg-3);
+  }
+  .dd-tag.good {
+    background: var(--good);
+    color: var(--bg);
+  }
+
+  .dd-daily-chart {
+    background: var(--bg-3);
+    border-radius: var(--radius);
+    padding: 16px 12px 8px;
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 130px;
+  }
+  .dd-day-bar {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    height: 100%;
+    justify-content: flex-end;
+  }
+  .dd-day-fill {
+    width: 100%;
+    background: var(--fg-2);
+    border-radius: 3px 3px 0 0;
+    min-height: 2px;
+    transition: height 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .dd-day-bar:last-child .dd-day-fill { background: var(--fg); }
+  .dd-day-label {
+    font-size: 8px;
+    color: var(--fg-3);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+  }
+
+  /* Add tappable affordances to Pulse hero/kpis/movers/trends/txns */
+  .hero,
+  .kpi,
+  .mover,
+  .trend,
+  .day-head {
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: background 0.15s, transform 0.15s, opacity 0.15s;
+  }
+  .hero:active { opacity: 0.85; }
+  .kpi:active,
+  .mover:active,
+  .trend:active {
+    background: var(--bg-4);
+    transform: scale(0.985);
+  }
+  .day-head:active { opacity: 0.6; }
+  .txn {
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .txn:active { background: var(--bg-4); }
+
+  /* dd-cat-row tappability when wired up */
+  .dd-cat-row[onclick],
+  .dd-txn[onclick] {
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .dd-cat-row[onclick]:active,
+  .dd-txn[onclick]:active {
+    background: var(--bg-4);
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Top nav -->
+  <nav class="topnav">
+    <div class="brand" id="brand">
+      <span class="brand-mark">
+        <svg viewBox="0 0 26 26">
+          <path d="M2 13 L7 13 L9.5 5.5 L13.5 20.5 L16 13 L24 13" />
+          <circle class="pulse-dot" cx="24" cy="13" r="2.2" />
+        </svg>
+      </span>
+      <span class="brand-text">
+        <span class="brand-name">Pulse</span>
+        <span class="brand-tagline">Spending · Live</span>
+      </span>
+    </div>
+    <div class="topnav-meta">
+      <span class="topnav-status"><span class="live-dot"></span><span id="status-label">SYNCED</span></span>
+      <span class="topnav-date" id="m-date">—</span>
+    </div>
+  </nav>
+
+  <!-- Setup screen (only when no URL saved) -->
+  <div id="setup-screen" class="setup" style="display:none">
+    <h3>Connect your data</h3>
+    <p>Paste the published CSV URL of your Sheet's <strong style="color:var(--fg)">Dashboard Data</strong> tab.<br>
+       <em>File → Share → Publish to web → Dashboard Data → CSV</em></p>
+    <input id="csvurl" type="url" autocomplete="off" autocapitalize="off" autocorrect="off"
+           placeholder="https://docs.google.com/.../pub?output=csv">
+    <button onclick="connect()">Connect</button>
+  </div>
+
+  <!-- ============================================
+       PULSE SCREEN
+       ============================================ -->
+  <main id="screen-pulse" class="screen active">
+    <section class="hero reveal" onclick="openDrilldown('hero')">
+      <div class="hero-eyebrow">
+        <span class="hero-label">Projected month-end</span>
+        <span class="hero-trend" id="vs-last"><span class="arrow">↑</span><span id="vs-last-val">—</span></span>
+      </div>
+      <div class="hero-number">
+        <span class="dollar">$</span>
+        <span id="hero-int">—</span>
+        <span class="cents" id="hero-cents">.00</span>
+      </div>
+      <div class="hero-sub" id="hero-sub">—</div>
+
+      <div class="pace">
+        <div class="pace-track">
+          <div class="pace-fill" id="pace-fill" style="width:0"></div>
+          <div class="pace-marker" id="pace-marker" style="left:0"></div>
+        </div>
+        <div class="pace-labels">
+          <span><strong id="pace-spent">$0</strong> spent</span>
+          <span><strong id="pace-budget">$0</strong> budget</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="kpi-grid reveal" style="animation-delay:60ms">
+      <div class="kpi" onclick="openDrilldown('kpi', 'avg')">
+        <div class="kpi-label">Daily avg</div>
+        <div class="kpi-value" id="kpi-avg">—</div>
+        <div class="kpi-delta" id="kpi-avg-delta">—</div>
+      </div>
+      <div class="kpi" onclick="openDrilldown('kpi', 'days')">
+        <div class="kpi-label">Days left</div>
+        <div class="kpi-value" id="kpi-days">—</div>
+        <div class="kpi-delta" id="kpi-days-delta">—</div>
+      </div>
+      <div class="kpi" onclick="openDrilldown('kpi', 'avail')">
+        <div class="kpi-label">Available</div>
+        <div class="kpi-value" id="kpi-avail">—</div>
+        <div class="kpi-delta" id="kpi-avail-delta">—</div>
+      </div>
+    </section>
+
+    <!-- BRIEFING — audio summary player -->
+    <section class="briefing reveal" style="animation-delay:90ms" id="briefing">
+      <div class="briefing-head">
+        <div class="briefing-eyebrow">
+          <span class="briefing-eyebrow-dot"></span>
+          <span>Daily briefing</span>
+        </div>
+        <div class="briefing-meta" id="briefing-time">—</div>
+      </div>
+      <div class="briefing-body">
+        <button class="briefing-play" id="briefing-play" onclick="toggleBriefing()" aria-label="Play briefing">
+          <svg id="briefing-icon-play" viewBox="0 0 24 24" width="20" height="20"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+          <svg id="briefing-icon-pause" viewBox="0 0 24 24" width="20" height="20" style="display:none"><path d="M6 4h4v16H6zM14 4h4v16h-4z" fill="currentColor"/></svg>
+        </button>
+        <div class="briefing-text-wrap">
+          <div class="briefing-title">Listen to today's summary</div>
+          <div class="briefing-subtitle" id="briefing-status">~30s · tap play</div>
+        </div>
+      </div>
+      <div class="briefing-progress" id="briefing-progress">
+        <div class="briefing-progress-fill" id="briefing-progress-fill"></div>
+      </div>
+      <div class="briefing-controls" id="briefing-controls" style="display:none">
+        <button class="briefing-chip" onclick="setBriefingScope('day')" data-scope="day" id="scope-day">Today</button>
+        <button class="briefing-chip active" onclick="setBriefingScope('week')" data-scope="week" id="scope-week">This week</button>
+        <button class="briefing-chip" onclick="setBriefingScope('month')" data-scope="month" id="scope-month">This month</button>
+      </div>
+      <div class="briefing-script" id="briefing-script"></div>
+    </section>
+
+    <div class="sec-head reveal" style="animation-delay:120ms">
+      <h2>Top movers</h2>
+      <span class="h-meta">This month</span>
+    </div>
+    <div class="movers" id="movers-list"></div>
+  </main>
+
+  <!-- ============================================
+       CARDS SCREEN
+       ============================================ -->
+  <main id="screen-cards" class="screen">
+    <div class="sec-head">
+      <h2>Cards & Accounts</h2>
+      <span class="h-meta" id="cards-period">April</span>
+    </div>
+
+    <!-- Net worth strip — checking + savings + total credit owed -->
+    <section class="networth" id="networth-strip" style="display:none">
+      <div class="nw-card" id="nw-checking-tile" onclick="openDrilldown('account', 'checking')">
+        <div class="nw-label">Checking</div>
+        <div class="nw-value" id="nw-checking">—</div>
+        <div class="nw-sub" id="nw-checking-sub">—</div>
+      </div>
+      <div class="nw-card" id="nw-savings-tile" onclick="openDrilldown('account', 'savings')">
+        <div class="nw-label">Savings</div>
+        <div class="nw-value" id="nw-savings">—</div>
+        <div class="nw-sub" id="nw-savings-sub">—</div>
+      </div>
+      <div class="nw-card warn" id="nw-credit-tile">
+        <div class="nw-label">Credit owed</div>
+        <div class="nw-value" id="nw-credit">—</div>
+        <div class="nw-sub" id="nw-credit-sub">—</div>
+      </div>
+    </section>
+
+    <div class="sec-head" style="padding-top:10px">
+      <h2 class="h-sub">Credit cards</h2>
+      <span class="h-meta">Tap for details</span>
+    </div>
+    <div class="card-list" id="card-list"></div>
+
+    <div class="sec-head" style="padding-top:24px">
+      <h2 class="h-sub">Bank accounts</h2>
+    </div>
+    <div class="bank-list" id="bank-list"></div>
+  </main>
+
+  <!-- ============================================
+       TRENDS SCREEN
+       ============================================ -->
+  <main id="screen-trends" class="screen">
+    <div class="sec-head">
+      <h2>Trends</h2>
+      <span class="h-meta" id="trends-window">Six months</span>
+    </div>
+
+    <!-- Big primary chart: total spending over time -->
+    <section class="trend-hero" id="trend-hero">
+      <div class="trend-hero-head">
+        <div class="trend-hero-eyebrow">Monthly total</div>
+        <div class="trend-hero-toggle">
+          <button class="th-tog active" data-metric="total" onclick="setTrendMetric('total')">Total</button>
+          <button class="th-tog" data-metric="budget" onclick="setTrendMetric('budget')">vs Budget</button>
+        </div>
+      </div>
+      <div class="trend-hero-value">
+        <span class="thv-amt" id="thv-amt">—</span>
+        <span class="thv-pill" id="thv-pill">—</span>
+      </div>
+      <div class="trend-hero-meta" id="thv-meta">—</div>
+      <div class="trend-hero-chart" id="trend-hero-chart"></div>
+    </section>
+
+    <!-- Insights — biggest movers, anomalies, streaks -->
+    <div class="sec-head" style="padding-top:24px">
+      <h2 class="h-sub">Insights</h2>
+    </div>
+    <div class="insights" id="trend-insights"></div>
+
+    <!-- Per-bucket sparkline rows, bigger and more informative -->
+    <div class="sec-head" style="padding-top:24px">
+      <h2 class="h-sub">By bucket</h2>
+    </div>
+    <div class="trend-rows" id="trend-rows"></div>
+
+    <!-- Per-category trajectories (sparklines for top categories) -->
+    <div class="sec-head" style="padding-top:24px">
+      <h2 class="h-sub">Top categories</h2>
+      <span class="h-meta">6-month trajectory</span>
+    </div>
+    <div class="trend-cats" id="trend-cats"></div>
+  </main>
+
+  <!-- ============================================
+       ACTIVITY SCREEN
+       ============================================ -->
+  <main id="screen-activity" class="screen">
+    <div class="sec-head">
+      <h2>Activity</h2>
+      <span class="h-meta" id="activity-meta">—</span>
+    </div>
+    <div class="activity" id="activity-list"></div>
+  </main>
+
+</div>
+
+<!-- ============================================
+     UNIFIED DRILL-DOWN SHEET
+     ============================================ -->
+<div class="dd-sheet" id="drilldown-sheet">
+  <div class="dd-grabber-wrap" onclick="closeDrilldown()"><div class="dd-grabber"></div></div>
+  <button class="dd-back" id="dd-back" onclick="backDrilldown()" style="display:none" aria-label="Back">
+    <svg viewBox="0 0 24 24" width="18" height="18"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <button class="dd-close" onclick="closeDrilldown()" aria-label="Close">×</button>
+  <div class="dd-content" id="drilldown-body"></div>
+</div>
+<div class="dd-backdrop" id="drilldown-backdrop" onclick="closeDrilldown()"></div>
+
+<!-- ============================================
+     TAB BAR
+     ============================================ -->
+<nav class="tabbar">
+  <div class="tabbar-inner">
+    <button class="tab active" data-screen="pulse" onclick="showScreen('pulse')">
+      <span class="icon"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg></span>
+      <span>Pulse</span>
+    </button>
+    <button class="tab" data-screen="cards" onclick="showScreen('cards')">
+      <span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><line x1="3" y1="11" x2="21" y2="11"/></svg></span>
+      <span>Cards</span>
+    </button>
+    <button class="tab" data-screen="trends" onclick="showScreen('trends')">
+      <span class="icon"><svg viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg></span>
+      <span>Trends</span>
+    </button>
+    <button class="tab" data-screen="activity" onclick="showScreen('activity')">
+      <span class="icon"><svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></span>
+      <span>Activity</span>
+    </button>
+  </div>
+</nav>
+
+<script>
+'use strict';
+
+const KEY = 'pulse_csv_url_v1';
+
+// Verified April 2026 rates. Source: each issuer's official terms + NerdWallet.
+// Capital One Venture X: 10x/5x ONLY when booked through Capital One Travel portal.
+// Citi Costco: 5%/4% gas categories share a $7,000/yr cap, then drop to 1%.
+// Bilt Blue: post-Feb 2026 lineup is 1x flat on everyday spend (the old 3x dining
+//   ended with the original Bilt Mastercard on Feb 6, 2026). 4% Bilt Cash option
+//   is dollar-for-dollar credits, not a cash-equivalent rewards rate.
+const CARDS = {
+  'Chase': {
+    name: 'Chase Freedom Unlimited',
+    issuer: 'Chase',
+    color: '#0F4C8A',
+    gradient: ['#0F4C8A', '#1B6BBC'],
+    network: 'visa',
+    last4: '4567',
+    rewards: { default: 1.5, dining: 3, drugstore: 3, travel: 5 },
+    perks: [
+      { rate: '5%', label: 'Travel via Chase Travel℠' },
+      { rate: '3%', label: 'Dining at restaurants' },
+      { rate: '3%', label: 'Drugstores' },
+      { rate: '1.5%', label: 'Everything else' }
+    ],
+    note: '1.5% all · 3% dining · 5% travel'
+  },
+  'Capital one': {
+    name: 'Capital One Venture X',
+    issuer: 'Capital One',
+    color: '#D03027',
+    gradient: ['#1F1F1F', '#2D2D2D'],
+    network: 'visa',
+    last4: '1234',
+    rewards: { default: 2, hotel_portal: 10, flight_portal: 5, entertainment: 5 },
+    perks: [
+      { rate: '10x', label: 'Hotels & rental cars (Cap One Travel only)' },
+      { rate: '5x', label: 'Flights & vacation rentals (Cap One Travel only)' },
+      { rate: '5x', label: 'Capital One Entertainment' },
+      { rate: '2x', label: 'Everything else' }
+    ],
+    note: '2x all · 10x hotels (portal) · 5x flights (portal)'
+  },
+  'Citi': {
+    name: 'Citi Costco Anywhere',
+    issuer: 'Citi',
+    color: '#005EB8',
+    gradient: ['#005EB8', '#0080D0'],
+    network: 'visa',
+    last4: '7890',
+    rewards: { default: 1, gas_costco: 5, gas: 4, dining: 3, travel: 3, costco: 2 },
+    cap: { categories: ['gas_costco', 'gas'], limit: 7000, postCapRate: 1, label: '$7K/yr cap on gas' },
+    perks: [
+      { rate: '5%', label: 'Gas at Costco gas stations' },
+      { rate: '4%', label: 'Other gas & EV charging' },
+      { rate: '3%', label: 'Restaurants & travel' },
+      { rate: '2%', label: 'Costco & Costco.com' },
+      { rate: '1%', label: 'Everything else' }
+    ],
+    note: '5% Costco gas · 4% other gas · 3% dining/travel'
+  },
+  'Bilt': {
+    name: 'Bilt Blue',
+    issuer: 'Bilt',
+    color: '#0A0A0A',
+    gradient: ['#0A0A0A', '#222222'],
+    network: 'mc',
+    last4: '3456',
+    rewards: { default: 1, rent: 1.25 },
+    perks: [
+      { rate: '1.25x', label: 'Rent / mortgage (via Bilt app)' },
+      { rate: '1x', label: 'Everything else' },
+      { rate: '4%', label: 'Bilt Cash option (credits only)' }
+    ],
+    note: '1x flat · 1.25x rent · 4% Bilt Cash credits',
+    warning: 'Reformatted Feb 2026. Old 3x dining / 2x travel rates retired.'
+  },
+  'Chase Debit': {
+    name: 'Chase Total Checking',
+    issuer: 'Chase',
+    color: '#0F4C8A',
+    gradient: ['#0A3A6F', '#0F4C8A'],
+    network: 'visa',
+    last4: '0000',
+    isDebit: true,
+    rewards: { default: 0 },
+    perks: [{ rate: '0%', label: 'Debit card · no credit card rewards' }],
+    note: 'Debit · pulls from Chase checking'
+  }
+};
+
+// ACCOUNTS — populated from Sheet (when Apps Script is updated to parse balance emails)
+// Structure: card_key -> { statementBalance, statementDate, dueDate, currentBalance }
+//            'checking' -> { balance, asOf }
+//            'savings'  -> { balance, asOf }
+let ACCOUNTS = {
+  // Stub values shown until Sheet provides real ones
+  // Once you forward me a Chase statement email, Capital One statement, etc.
+  // we'll wire the parsers and these will fill in automatically.
+};
+
+// Map your transaction categories to the reward category keys above.
+const CATEGORY_REWARD_MAP = {
+  'Dining out': 'dining',
+  'Coffee': 'dining',
+  'Alcohol': 'dining',
+  'Travel': 'travel',
+  'Car charging': 'gas',
+  'Groceries': 'costco',
+  'Rent': 'rent',
+  // Drugstores would be 'drugstore' for Chase but we don't have that category yet
+};
+
+function rewardRate(card, category) {
+  const info = CARDS[card];
+  if (!info) return 0;
+  const rc = CATEGORY_REWARD_MAP[category];
+  return (rc && info.rewards[rc] != null ? info.rewards[rc] : null) ?? info.rewards.default ?? 0;
+}
+
+function optimalCardFor(category) {
+  let best = { card: 'Chase', rate: 1.5 };
+  for (const card of Object.keys(CARDS)) {
+    if (card === 'Chase Debit') continue;
+    const rate = rewardRate(card, category);
+    if (rate > best.rate) best = { card, rate };
+  }
+  return best;
+}
+
+let DATA = { cats: [], mom: [], cards: [], recent: [], accounts: [] };
+const KNOWN_CATEGORIES = new Set([
+  'Rent','Electricity','Renters Insurance','Tesla Car','Tesla Insurance',
+  'Tesla Registration','Tesla Connectivity','FSD','Car charging','Car wash',
+  'Groceries','Protein shake','Coffee','Dining out','Alcohol',
+  'ChatGPT','Claude AI','Apple storage','Netflix','Spotify',
+  'PS5 Subscription','Verizon','Haircut','Travel',
+  'Events & Experiences','Gifts & Family','Shopping','Misc Adhoc'
+]);
+const KNOWN_MONTHS = new Set(['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']);
+const KNOWN_CARDS = new Set(Object.keys(CARDS));
+
+function connect() {
+  const url = document.getElementById('csvurl').value.trim();
+  if (!url) return;
+  localStorage.setItem(KEY, url);
+  document.getElementById('setup-screen').style.display = 'none';
+  load();
+}
+
+async function load() {
+  const url = localStorage.getItem(KEY);
+  if (!url) { document.getElementById('setup-screen').style.display = 'block'; return; }
+  try {
+    const res = await fetch(url + (url.includes('?') ? '&' : '?') + 'ts=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' — Sheet not accessible');
+    const text = await res.text();
+    if (text.trim().length === 0) throw new Error('Empty CSV — wrong tab published?');
+    DATA = parseCsv(text);
+    const totalRows = DATA.cats.length + DATA.mom.length + DATA.cards.length + DATA.recent.length;
+    if (totalRows === 0) throw new Error('No data found. Did you publish "Dashboard Data" tab?');
+    renderAll();
+  } catch (e) {
+    console.error(e);
+    document.getElementById('hero-sub').innerHTML = '<span style="color:var(--accent)">⚠</span> ' + e.message;
+  }
+}
+
+function parseCsvLine(line) {
+  const cells = []; let cur = ''; let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQ) {
+      if (ch === '"' && line[i+1] === '"') { cur += '"'; i++; }
+      else if (ch === '"') inQ = false;
+      else cur += ch;
+    } else {
+      if (ch === ',') { cells.push(cur); cur = ''; }
+      else if (ch === '"') inQ = true;
+      else cur += ch;
+    }
+  }
+  cells.push(cur);
+  return cells;
+}
+
+function num(v) {
+  if (v == null) return 0;
+  const c = String(v).replace(/[$,\s]/g, '').replace(/[()]/g, '-');
+  const n = parseFloat(c);
+  return isNaN(n) ? 0 : n;
+}
+
+function parseCsv(text) {
+  const rows = text.replace(/\r/g, '').split('\n').map(parseCsvLine);
+  const sec = { cats:{s:-1,e:-1}, mom:{s:-1,e:-1}, cards:{s:-1,e:-1}, recent:{s:-1,e:-1}, accounts:{s:-1,e:-1} };
+  for (let i = 0; i < rows.length; i++) {
+    const a = (rows[i][0] || '').trim();
+    if (a.startsWith('CURRENT MONTH — CATEGORIES') || a.startsWith('CURRENT MONTH - CATEGORIES')) sec.cats.s = i + 2;
+    else if (a.startsWith('MONTH-OVER-MONTH')) { sec.cats.e = i; sec.mom.s = i + 2; }
+    else if (a.startsWith('CURRENT MONTH — BY CARD') || a.startsWith('CURRENT MONTH - BY CARD')) { sec.mom.e = i; sec.cards.s = i + 2; }
+    else if (a.startsWith('ACCOUNTS') || a.startsWith('BALANCES')) { sec.cards.e = i; sec.accounts.s = i + 2; }
+    else if (a.startsWith('RECENT TRANSACTIONS')) {
+      if (sec.cards.e < 0) sec.cards.e = i;
+      if (sec.accounts.s > 0 && sec.accounts.e < 0) sec.accounts.e = i;
+      sec.recent.s = i + 2;
+      sec.recent.e = rows.length;
+    }
+  }
+  const r = { cats: [], mom: [], cards: [], recent: [], accounts: [] };
+
+  if (sec.cats.s > 0) {
+    const end = sec.cats.e > 0 ? sec.cats.e : rows.length;
+    for (let i = sec.cats.s; i < end; i++) {
+      const row = rows[i]; const name = (row[0] || '').trim();
+      if (!KNOWN_CATEGORIES.has(name)) continue;
+      r.cats.push({ category: name, bucket: row[1] || '', spent: num(row[2]), budget: num(row[3]), pct: num(row[4]) });
+    }
+  }
+  if (sec.mom.s > 0) {
+    const end = sec.mom.e > 0 ? sec.mom.e : rows.length;
+    for (let i = sec.mom.s; i < end; i++) {
+      const row = rows[i]; const name = (row[0] || '').trim();
+      if (!KNOWN_MONTHS.has(name)) continue;
+      r.mom.push({
+        month: name, total: num(row[1]), budget: num(row[2]),
+        housing: num(row[3]), food: num(row[4]),
+        transport: num(row[5]), lifestyle: num(row[6]), subscriptions: num(row[7]),
+      });
+    }
+  }
+  if (sec.cards.s > 0) {
+    const end = sec.cards.e > 0 ? sec.cards.e : rows.length;
+    for (let i = sec.cards.s; i < end; i++) {
+      const row = rows[i]; const name = (row[0] || '').trim();
+      if (!KNOWN_CARDS.has(name)) continue;
+      r.cards.push({ card: name, spent: num(row[1]), pct: num(row[2]), count: Math.round(num(row[3])) });
+    }
+  }
+  // ACCOUNTS section: Account, Type, Balance, As-of-date, [optional: due date, statement date]
+  // Type values: 'checking', 'savings', 'credit-statement'
+  if (sec.accounts.s > 0) {
+    const end = sec.accounts.e > 0 ? sec.accounts.e : rows.length;
+    for (let i = sec.accounts.s; i < end; i++) {
+      const row = rows[i]; const name = (row[0] || '').trim();
+      if (!name || name.startsWith('"') || name.startsWith('—')) continue;
+      const type = (row[1] || '').trim().toLowerCase();
+      if (!type) continue;
+      r.accounts.push({
+        account: name,
+        type,
+        balance: num(row[2]),
+        asOf: (row[3] || '').trim(),
+        dueDate: (row[4] || '').trim(),
+        statementDate: (row[5] || '').trim(),
+      });
+    }
+  }
+  if (sec.recent.s > 0) {
+    const end = sec.recent.e > 0 ? sec.recent.e : rows.length;
+    for (let i = sec.recent.s; i < end; i++) {
+      const row = rows[i]; const date = (row[0] || '').trim();
+      if (!/^\d{4}-\d{2}-\d{2}/.test(date)) continue;
+      r.recent.push({
+        date, merchant: row[1] || '', category: row[2] || '',
+        card: row[3] || '', amount: num(row[4]), bucket: row[5] || '',
+      });
+    }
+  }
+  return r;
+}
+
+function renderAll() {
+  renderTopnav();
+  renderPulse();
+  renderMovers();
+  renderCards();
+  renderTrends();
+  renderActivity();
+  renderBriefing();
+}
+
+function renderTopnav() {
+  const now = new Date();
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('m-date').textContent = `${months[now.getMonth()]} ${now.getDate()}`;
+}
+
+function renderPulse() {
+  const totalSpent = DATA.cats.reduce((a, c) => a + c.spent, 0);
+  const totalBudget = DATA.cats.reduce((a, c) => a + c.budget, 0);
+  const now = new Date();
+  const day = now.getDate();
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const daysLeft = lastDay - day;
+  const dailyPace = day > 0 ? totalSpent / day : 0;
+  const projected = dailyPace * lastDay;
+
+  const intPart = Math.floor(projected).toLocaleString();
+  const centsPart = '.' + (Math.round((projected % 1) * 100)).toString().padStart(2, '0');
+  document.getElementById('hero-int').textContent = intPart;
+  document.getElementById('hero-cents').textContent = centsPart;
+
+  const lastMonth = DATA.mom[DATA.mom.length - 2];
+  const vsLastEl = document.getElementById('vs-last');
+  const vsLastVal = document.getElementById('vs-last-val');
+  if (lastMonth && lastMonth.total > 0) {
+    const pctChange = ((projected - lastMonth.total) / lastMonth.total) * 100;
+    vsLastEl.querySelector('.arrow').textContent = pctChange >= 0 ? '↑' : '↓';
+    vsLastVal.textContent = `${Math.abs(Math.round(pctChange))}% vs ${lastMonth.month}`;
+  } else {
+    vsLastEl.style.opacity = 0;
+  }
+
+  const overUnder = projected - totalBudget;
+  const sub = document.getElementById('hero-sub');
+  if (overUnder > 0) {
+    sub.innerHTML = `On pace to exceed budget by <span class="accent">$${Math.round(overUnder).toLocaleString()}</span>. Pull back below to reset.`;
+  } else if (totalBudget > 0) {
+    sub.innerHTML = `On track to come in <strong>$${Math.round(-overUnder).toLocaleString()}</strong> under budget.`;
+  } else {
+    sub.textContent = '';
+  }
+
+  const pacePct = totalBudget > 0 ? Math.min(100, (totalSpent / totalBudget) * 100) : 0;
+  const timePct = (day / lastDay) * 100;
+  const fill = document.getElementById('pace-fill');
+  fill.style.width = pacePct + '%';
+  if (totalSpent > totalBudget) fill.classList.add('over'); else fill.classList.remove('over');
+  document.getElementById('pace-marker').style.left = timePct + '%';
+  document.getElementById('pace-spent').textContent = '$' + Math.round(totalSpent).toLocaleString();
+  document.getElementById('pace-budget').textContent = '$' + Math.round(totalBudget).toLocaleString();
+
+  const avg = day > 0 ? totalSpent / day : 0;
+  const idealAvg = totalBudget / lastDay;
+  document.getElementById('kpi-avg').textContent = '$' + Math.round(avg).toLocaleString();
+  const avgDelta = avg - idealAvg;
+  const avgDeltaEl = document.getElementById('kpi-avg-delta');
+  if (avgDelta > 0) {
+    avgDeltaEl.className = 'kpi-delta warn';
+    avgDeltaEl.innerHTML = `↑ <strong>$${Math.round(avgDelta)}</strong> over pace`;
+  } else {
+    avgDeltaEl.className = 'kpi-delta';
+    avgDeltaEl.innerHTML = `↓ <strong>$${Math.abs(Math.round(avgDelta))}</strong> under pace`;
+  }
+
+  document.getElementById('kpi-days').textContent = daysLeft;
+  document.getElementById('kpi-days-delta').textContent = `of ${lastDay}`;
+
+  const available = totalBudget - totalSpent;
+  document.getElementById('kpi-avail').textContent = '$' + Math.round(Math.max(0, available)).toLocaleString();
+  const dailyAvail = daysLeft > 0 ? available / daysLeft : 0;
+  document.getElementById('kpi-avail-delta').innerHTML = available > 0
+    ? `<strong>$${Math.round(dailyAvail)}</strong>/day left`
+    : 'Over budget';
+}
+
+function renderMovers() {
+  const list = document.getElementById('movers-list');
+  const top = [...DATA.cats]
+    .filter(c => c.spent > 0)
+    .sort((a, b) => b.spent - a.spent)
+    .slice(0, 6);
+
+  if (top.length === 0) {
+    list.innerHTML = '<div class="empty">No activity yet this month</div>';
+    return;
+  }
+
+  list.innerHTML = top.map((c, i) => {
+    const pctOfBudget = c.budget > 0 ? (c.spent / c.budget) * 100 : 0;
+    const isOver = pctOfBudget > 100;
+    const barW = Math.min(100, pctOfBudget);
+    return `
+      <div class="mover reveal" style="animation-delay:${i*40}ms" onclick="openDrilldown('mover', '${esc(c.category)}')">
+        <div class="mover-name">${esc(c.category)}</div>
+        <div class="mover-amt">$${Math.round(c.spent).toLocaleString()}</div>
+        <div class="mover-meta">${esc(c.bucket || '')}</div>
+        <div class="mover-pct ${isOver ? 'over' : ''}">${c.budget > 0 ? Math.round(pctOfBudget) + '%' : '—'}</div>
+        ${c.budget > 0 ? `<div class="mover-bar"><span class="${isOver ? 'over' : ''}" style="width:${barW}%"></span></div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+function renderCards() {
+  renderNetworthStrip();
+  renderCreditCardList();
+  renderBankList();
+}
+
+function getCardStatement(cardKey) {
+  // Find a credit-statement type account that matches this card
+  return (DATA.accounts || []).find(a =>
+    (a.type === 'credit-statement' || a.type === 'credit') &&
+    (a.account === cardKey || a.account.toLowerCase() === cardKey.toLowerCase())
+  );
+}
+
+function renderNetworthStrip() {
+  const accts = DATA.accounts || [];
+  if (accts.length === 0) {
+    document.getElementById('networth-strip').style.display = 'none';
+    return;
+  }
+
+  const checking = accts.find(a => a.type === 'checking');
+  const savings = accts.find(a => a.type === 'savings');
+  const creditTotal = accts.filter(a => a.type === 'credit-statement' || a.type === 'credit')
+    .reduce((s, a) => s + a.balance, 0);
+
+  if (!checking && !savings && creditTotal === 0) {
+    document.getElementById('networth-strip').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('networth-strip').style.display = 'grid';
+
+  if (checking) {
+    document.getElementById('nw-checking').textContent = '$' + Math.round(checking.balance).toLocaleString();
+    document.getElementById('nw-checking-sub').textContent = checking.asOf ? `as of ${formatShortDate(checking.asOf)}` : '—';
+  } else {
+    document.getElementById('nw-checking').textContent = '—';
+    document.getElementById('nw-checking-sub').textContent = 'not linked';
+  }
+
+  if (savings) {
+    document.getElementById('nw-savings').textContent = '$' + Math.round(savings.balance).toLocaleString();
+    document.getElementById('nw-savings-sub').textContent = savings.asOf ? `as of ${formatShortDate(savings.asOf)}` : '—';
+  } else {
+    document.getElementById('nw-savings').textContent = '—';
+    document.getElementById('nw-savings-sub').textContent = 'not linked';
+  }
+
+  if (creditTotal > 0) {
+    document.getElementById('nw-credit').textContent = '$' + Math.round(creditTotal).toLocaleString();
+    document.getElementById('nw-credit-sub').textContent = 'across all cards';
+  } else {
+    document.getElementById('nw-credit').textContent = '$0';
+    document.getElementById('nw-credit-sub').textContent = 'paid up';
+  }
+}
+
+function renderCreditCardList() {
+  const list = document.getElementById('card-list');
+  // Show all CARDS (excluding debit) regardless of activity, but with their stats
+  const cardData = Object.keys(CARDS)
+    .filter(k => !CARDS[k].isDebit)
+    .map(k => {
+      const found = DATA.cards.find(c => c.card === k);
+      return found || { card: k, spent: 0, count: 0, pct: 0 };
+    });
+
+  // Aggregate per-category spend per card from transaction data
+  const cardCategories = {};
+  DATA.recent.forEach(r => {
+    if (!cardCategories[r.card]) cardCategories[r.card] = {};
+    cardCategories[r.card][r.bucket] = (cardCategories[r.card][r.bucket] || 0) + r.amount;
+  });
+
+  const rewardsAnalysis = computeRewardsAnalysis();
+  cardData.sort((a, b) => b.spent - a.spent);
+
+  list.innerHTML = cardData.map((c, i) => {
+    const info = CARDS[c.card] || { name: c.card, issuer: '', note: '', perks: [], gradient: ['#2D2D2D','#3D3D3D'], network: 'visa', last4: '' };
+    const cats = cardCategories[c.card] || {};
+    const total = Object.values(cats).reduce((a, b) => a + b, 0) || 1;
+
+    const buckets = ['Housing', 'Food', 'Transportation', 'Lifestyle', 'Subscriptions'];
+    const segs = buckets.map((b, idx) =>
+      `<div class="seg-${idx+1}" style="width:${((cats[b]||0)/total)*100}%"></div>`
+    ).join('');
+
+    const legendItems = buckets
+      .filter(b => (cats[b] || 0) > 0)
+      .map(b => {
+        const colorIdx = buckets.indexOf(b) + 1;
+        return `<span class="leg"><span class="dot seg-${colorIdx}"></span>${esc(b)}</span>`;
+      }).join('');
+
+    const analysis = rewardsAnalysis[c.card] || { earned: 0, tip: '' };
+    const earnedDollars = analysis.earned.toFixed(2);
+    const tipClass = analysis.tip && analysis.tip.startsWith('Move') ? 'action' : '';
+
+    // Statement balance
+    const stmt = getCardStatement(c.card);
+    const stmtHtml = stmt
+      ? `<div class="ccard-statement">Statement: <strong>$${Math.round(stmt.balance).toLocaleString()}</strong>${stmt.dueDate ? ` · due ${formatShortDate(stmt.dueDate)}` : ''}</div>`
+      : '';
+
+    // Card visual
+    const grad = info.gradient ? `linear-gradient(135deg, ${info.gradient[0]}, ${info.gradient[1]})` : '';
+    const networkBadge = info.network === 'visa'
+      ? `<div class="cv-text">VISA</div>`
+      : `<div class="cv-network"><div class="dot"></div><div class="dot"></div></div>`;
+    const cardVisual = `
+      <div class="card-visual ${info.network === 'visa' ? 'visa' : ''}" style="--cv-grad:${grad}">
+        <div class="cv-chip"></div>
+        ${info.last4 ? `<div class="cv-last">•${info.last4.slice(-4)}</div>` : ''}
+        ${networkBadge}
+      </div>`;
+
+    return `
+      <div class="ccard reveal" style="animation-delay:${i*60}ms" onclick="openCardDrilldown('${esc(c.card)}')" data-card="${esc(c.card)}">
+        <div class="ccard-head">
+          <div class="ccard-head-left">
+            ${cardVisual}
+            <div class="ccard-name-block">
+              <div class="ccard-name">${esc(info.name)}</div>
+              <div class="ccard-issuer">${esc(info.note)}</div>
+              ${stmtHtml}
+            </div>
+          </div>
+          <div class="ccard-spend">
+            <div class="amt">$${Math.round(c.spent).toLocaleString()}</div>
+            <div class="meta">${c.count} txn${c.count === 1 ? '' : 's'}</div>
+          </div>
+        </div>
+        ${(cats && Object.keys(cats).length > 0) ? `
+        <div>
+          <div class="ccard-bar">${segs}</div>
+        </div>
+        <div class="ccard-legend">${legendItems}</div>
+        ` : ''}
+        <div class="ccard-rewards">
+          <div class="earned">≈ <strong>$${earnedDollars}</strong> earned</div>
+          <div class="tip ${tipClass}">${analysis.tip ? esc(analysis.tip) : (c.spent > 0 ? 'tap for details' : 'no spend yet')}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderBankList() {
+  const wrap = document.getElementById('bank-list');
+  const accts = DATA.accounts || [];
+  const banks = accts.filter(a => a.type === 'checking' || a.type === 'savings');
+
+  if (banks.length === 0) {
+    wrap.innerHTML = `
+      <div class="empty">
+        <div style="font-weight:600; color:var(--fg); font-size:14px; margin-bottom:6px">No bank accounts linked yet</div>
+        <div style="font-size:11px; line-height:1.5; max-width:300px; margin:0 auto">
+          Forward me a Chase email alert and we'll wire up checking + savings + statement balances. Tesla lease payments will flow through automatically.
+        </div>
+      </div>`;
+    return;
+  }
+
+  // Recent debit activity per account (Chase Debit type transactions)
+  const debitTxns = DATA.recent.filter(t => t.card === 'Chase Debit' || t.card === 'Checking');
+
+  wrap.innerHTML = banks.map(a => {
+    const isChecking = a.type === 'checking';
+    const initials = isChecking ? 'CH' : 'SV';
+    const txnCount = isChecking ? debitTxns.length : 0;
+    const lastTxn = debitTxns[0];
+    const lastTxnSub = isChecking && lastTxn ? `${txnCount} txn${txnCount === 1 ? '' : 's'} · last: ${lastTxn.merchant.slice(0, 24)}` : (a.asOf ? `as of ${formatShortDate(a.asOf)}` : '');
+    return `
+      <div class="bank" onclick="openDrilldown('account', '${esc(a.type)}')">
+        <div class="bank-icon ${a.type}">${initials}</div>
+        <div class="bank-info">
+          <div class="bank-name">${esc(a.account)}</div>
+          <div class="bank-meta">${esc(lastTxnSub)}</div>
+        </div>
+        <div class="bank-amt">$${Math.round(a.balance).toLocaleString()}</div>
+      </div>`;
+  }).join('');
+}
+
+function formatShortDate(s) {
+  if (!s) return '';
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+    const d = new Date(s + 'T12:00:00');
+    const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${m[d.getMonth()]} ${d.getDate()}`;
+  }
+  return s;
+}
+
+function computeRewardsAnalysis() {
+  const analysis = {};
+  Object.keys(CARDS).forEach(c => {
+    analysis[c] = { earned: 0, optimal: 0, missed: 0, swaps: {}, byCategory: {} };
+  });
+  DATA.recent.forEach(t => {
+    if (!analysis[t.card]) return;
+    const actualRate = rewardRate(t.card, t.category);
+    const earned = t.amount * (actualRate / 100); // rate is in percent, convert to $
+    const opt = optimalCardFor(t.category);
+    const optEarned = t.amount * (opt.rate / 100);
+    const missed = optEarned - earned;
+
+    analysis[t.card].earned += earned;
+    analysis[t.card].optimal += optEarned;
+
+    // Track per-category for drilldown
+    if (!analysis[t.card].byCategory[t.category]) {
+      analysis[t.card].byCategory[t.category] = {
+        spent: 0, earned: 0, optimal: 0, missed: 0,
+        actualRate, optRate: opt.rate, optCard: opt.card,
+        txCount: 0
+      };
+    }
+    const bc = analysis[t.card].byCategory[t.category];
+    bc.spent += t.amount;
+    bc.earned += earned;
+    bc.optimal += optEarned;
+    bc.missed += Math.max(0, missed);
+    bc.txCount += 1;
+
+    if (missed > 0 && opt.card !== t.card) {
+      analysis[t.card].missed += missed;
+      if (!analysis[t.card].swaps[t.category]) {
+        analysis[t.card].swaps[t.category] = { to: opt.card, missed: 0, fromRate: actualRate, toRate: opt.rate };
+      }
+      analysis[t.card].swaps[t.category].missed += missed;
+    }
+  });
+
+  Object.entries(analysis).forEach(([card, a]) => {
+    if (a.missed > 0.50) {
+      const swaps = Object.entries(a.swaps).sort((x, y) => y[1].missed - x[1].missed);
+      if (swaps.length) {
+        const [cat, swap] = swaps[0];
+        const targetCard = CARDS[swap.to]?.issuer || swap.to;
+        a.tip = `Move ${cat} → ${targetCard} +$${swap.missed.toFixed(2)}`;
+      }
+    } else if (a.earned > 0) {
+      a.tip = 'Optimal use';
+    } else if (card === 'Chase Debit' && a.earned === 0) {
+      const debitTotal = (DATA.recent || [])
+        .filter(t => t.card === 'Chase Debit')
+        .reduce((s, t) => s + t.amount, 0);
+      if (debitTotal > 0) {
+        const wouldEarn = debitTotal * 0.015; // Chase Freedom Unlimited base rate
+        a.tip = `Switch to credit, +$${wouldEarn.toFixed(2)}`;
+      }
+    }
+  });
+  return analysis;
+}
+
+// ===========================================
+// ===========================================
+// UNIFIED DRILL-DOWN SHEET — stack-based navigation
+// ===========================================
+let DRILLDOWN_STACK = [];
+
+function openDrilldown(type, key, opts) {
+  opts = opts || {};
+  // Push to stack unless this is a "back" navigation
+  if (!opts.fromBack) {
+    DRILLDOWN_STACK.push({ type, key });
+  }
+  renderDrilldownContent();
+
+  const sheet = document.getElementById('drilldown-sheet');
+  const backdrop = document.getElementById('drilldown-backdrop');
+  if (!sheet.classList.contains('open')) {
+    sheet.classList.add('open');
+    backdrop.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function renderDrilldownContent() {
+  const body = document.getElementById('drilldown-body');
+  const backBtn = document.getElementById('dd-back');
+  if (DRILLDOWN_STACK.length === 0) return;
+  const { type, key } = DRILLDOWN_STACK[DRILLDOWN_STACK.length - 1];
+
+  let html = '';
+  try {
+    if (type === 'card') html = renderCardDrilldown(key);
+    else if (type === 'mover') html = renderMoverDrilldown(key);
+    else if (type === 'trend') html = renderTrendDrilldown(key);
+    else if (type === 'txn') html = renderTransactionDrilldown(key);
+    else if (type === 'hero') html = renderHeroDrilldown();
+    else if (type === 'kpi') html = renderKpiDrilldown(key);
+    else if (type === 'day') html = renderDayDrilldown(key);
+    else if (type === 'merchant') html = renderMerchantDrilldown(key);
+    else if (type === 'bucket') html = renderBucketDrilldown(key);
+    else if (type === 'month') html = renderMonthDrilldown(key);
+    else if (type === 'account') html = renderAccountDrilldown(key);
+  } catch (e) {
+    console.error('Drilldown render error', e);
+    html = '<div class="dd-empty">Could not load details<br><small style="opacity:0.6">' + esc(e.message || '') + '</small></div>';
+  }
+  body.innerHTML = html;
+  body.scrollTop = 0;
+
+  // Show back button if there's history
+  if (backBtn) {
+    backBtn.style.display = DRILLDOWN_STACK.length > 1 ? 'flex' : 'none';
+  }
+}
+
+function backDrilldown() {
+  if (DRILLDOWN_STACK.length <= 1) {
+    closeDrilldown();
+    return;
+  }
+  DRILLDOWN_STACK.pop();
+  renderDrilldownContent();
+}
+
+function closeDrilldown() {
+  document.getElementById('drilldown-sheet').classList.remove('open');
+  document.getElementById('drilldown-backdrop').classList.remove('show');
+  document.body.style.overflow = '';
+  setTimeout(() => { DRILLDOWN_STACK = []; }, 300);
+}
+
+// Backward-compat
+function openCardDrilldown(key) { openDrilldown('card', key); }
+function closeCardDrilldown() { closeDrilldown(); }
+
+// Returns HTML string instead of writing directly so the dispatcher can handle errors
+function renderCardDrilldown(cardKey) {
+  const info = CARDS[cardKey];
+  if (!info) return '<div class="dd-empty">Unknown card</div>';
+  const cardSpend = DATA.cards.find(c => c.card === cardKey) || { spent: 0, count: 0 };
+  const txns = DATA.recent.filter(t => t.card === cardKey).sort((a, b) => b.date.localeCompare(a.date));
+  const analysis = computeRewardsAnalysis()[cardKey] || { earned: 0, optimal: 0, missed: 0, byCategory: {} };
+
+  const body = document.getElementById('drilldown-body');
+
+  // Per-category breakdown table
+  const categories = Object.entries(analysis.byCategory)
+    .sort((a, b) => b[1].spent - a[1].spent);
+
+  const categoryRows = categories.length === 0 ? '' : categories.map(([cat, d]) => {
+    const isOpt = d.actualRate >= d.optRate - 0.001;
+    const optIssuer = CARDS[d.optCard]?.issuer || d.optCard;
+    return `
+      <div class="dd-cat-row" onclick="event.stopPropagation(); openDrilldown('mover', '${esc(cat)}')">
+        <div class="dd-cat-main">
+          <div class="dd-cat-name">${esc(cat)}</div>
+          <div class="dd-cat-meta">${d.txCount} txn${d.txCount === 1 ? '' : 's'} · earning ${d.actualRate}%</div>
+        </div>
+        <div class="dd-cat-amt">
+          <div class="dd-cat-spent">$${d.spent.toFixed(2)}</div>
+          <div class="dd-cat-earned ${isOpt ? '' : 'sub'}">+$${d.earned.toFixed(2)}</div>
+        </div>
+        ${!isOpt ? `<div class="dd-cat-swap">→ ${esc(optIssuer)} would earn ${d.optRate}% (+$${d.missed.toFixed(2)})</div>` : ''}
+      </div>`;
+  }).join('');
+
+  // Transaction list — make tappable
+  const monthShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const txnRows = txns.length === 0 ? '<div class="dd-empty">No transactions on this card yet</div>' : txns.map(t => {
+    const d = new Date(t.date + 'T12:00:00');
+    const rate = rewardRate(t.card, t.category);
+    const earned = t.amount * (rate / 100);
+    return `
+      <div class="dd-txn" onclick="event.stopPropagation(); openDrilldown('txn', '${esc(t.date)}|${esc(t.merchant)}|${t.amount}')">
+        <div class="dd-txn-date">${monthShort[d.getMonth()]} ${d.getDate()}</div>
+        <div class="dd-txn-main">
+          <div class="dd-txn-merch">${esc(t.merchant)}</div>
+          <div class="dd-txn-cat">${esc(t.category)}</div>
+        </div>
+        <div class="dd-txn-amts">
+          <div class="dd-txn-amt">$${t.amount.toFixed(2)}</div>
+          <div class="dd-txn-rate">${rate}% · +$${earned.toFixed(2)}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  // Perks display
+  const perksHtml = (info.perks || []).map(p => `
+    <div class="dd-perk">
+      <div class="dd-perk-rate">${esc(p.rate)}</div>
+      <div class="dd-perk-label">${esc(p.label)}</div>
+    </div>`).join('');
+
+  body.innerHTML = `
+    <div class="dd-header">
+      <div class="dd-card-name">${esc(info.name)}</div>
+      <div class="dd-card-issuer">${esc(info.issuer)}</div>
+    </div>    <div class="dd-summary">
+      <div class="dd-stat">
+        <div class="dd-stat-label">Spent</div>
+        <div class="dd-stat-val">$${Math.round(cardSpend.spent).toLocaleString()}</div>
+        <div class="dd-stat-sub">${cardSpend.count} txn${cardSpend.count === 1 ? '' : 's'}</div>
+      </div>
+      <div class="dd-stat">
+        <div class="dd-stat-label">Earned</div>
+        <div class="dd-stat-val">$${analysis.earned.toFixed(2)}</div>
+        <div class="dd-stat-sub">in rewards</div>
+      </div>
+      <div class="dd-stat">
+        <div class="dd-stat-label">${analysis.missed > 0.50 ? 'Left on table' : 'Optimal'}</div>
+        <div class="dd-stat-val ${analysis.missed > 0.50 ? 'warn' : 'good'}">${analysis.missed > 0.50 ? '+$' + analysis.missed.toFixed(2) : '✓'}</div>
+        <div class="dd-stat-sub">${analysis.missed > 0.50 ? 'with optimal cards' : 'best card used'}</div>
+      </div>
+    </div>
+
+    ${info.warning ? `<div class="dd-warning"><strong>Note:</strong> ${esc(info.warning)}</div>` : ''}
+
+    <div class="dd-section">
+      <div class="dd-section-head">Reward structure</div>
+      <div class="dd-perks">${perksHtml}</div>
+    </div>
+
+    ${categories.length > 0 ? `
+    <div class="dd-section">
+      <div class="dd-section-head">By category</div>
+      <div class="dd-cats">${categoryRows}</div>
+    </div>` : ''}
+
+    <div class="dd-section">
+      <div class="dd-section-head">All ${txns.length} transaction${txns.length === 1 ? '' : 's'}</div>
+      <div class="dd-txns">${txnRows}</div>
+    </div>
+  `;
+  return body.innerHTML;
+}
+
+// ===========================================
+// MOVER (CATEGORY) DRILL-DOWN
+// ===========================================
+function renderMoverDrilldown(category) {
+  const cat = DATA.cats.find(c => c.category === category);
+  if (!cat) return '<div class="dd-empty">Category not found</div>';
+
+  const txns = DATA.recent.filter(t => t.category === category).sort((a, b) => b.date.localeCompare(a.date));
+  const totalCount = txns.length;
+  const avgTxn = totalCount > 0 ? cat.spent / totalCount : 0;
+
+  // Pacing math
+  const now = new Date();
+  const day = now.getDate();
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const dayPace = day > 0 ? cat.spent / day : 0;
+  const projected = dayPace * lastDay;
+  const overUnder = cat.budget > 0 ? projected - cat.budget : 0;
+  const pctOfBudget = cat.budget > 0 ? (cat.spent / cat.budget) * 100 : 0;
+  const isOver = pctOfBudget > 100;
+  const projectedOver = cat.budget > 0 && projected > cat.budget;
+
+  // Card breakdown
+  const byCard = {};
+  txns.forEach(t => { byCard[t.card] = (byCard[t.card] || 0) + t.amount; });
+  const cardRows = Object.entries(byCard).sort((a, b) => b[1] - a[1]).map(([card, amt]) => {
+    const info = CARDS[card];
+    const rate = rewardRate(card, category);
+    const opt = optimalCardFor(category);
+    const isOpt = rate >= opt.rate - 0.001;
+    return `
+      <div class="dd-cat-row">
+        <div class="dd-cat-main">
+          <div class="dd-cat-name">${esc(info ? info.issuer : card)}</div>
+          <div class="dd-cat-meta">earning ${rate}%${!isOpt ? ` · ${CARDS[opt.card]?.issuer || opt.card} would earn ${opt.rate}%` : ''}</div>
+        </div>
+        <div class="dd-cat-amt">
+          <div class="dd-cat-spent">$${amt.toFixed(2)}</div>
+          <div class="dd-cat-earned ${isOpt ? '' : 'sub'}">+$${(amt * rate / 100).toFixed(2)}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  // MoM context — find this category's bucket and look up monthly history
+  const months = DATA.mom;
+  const bucketKey = (cat.bucket || '').toLowerCase().replace('transportation', 'transport').replace('subscriptions', 'subscriptions');
+  const bucketHistory = months.length >= 2 && months[0][bucketKey] != null
+    ? months.map(m => ({ month: m.month, val: m[bucketKey] || 0 }))
+    : null;
+
+  // Transactions
+  const monthShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const txnRows = txns.length === 0 ? '<div class="dd-empty">No transactions</div>' : txns.map(t => {
+    const d = new Date(t.date + 'T12:00:00');
+    return `
+      <div class="dd-txn" onclick="event.stopPropagation(); openDrilldown('txn', '${esc(t.date)}|${esc(t.merchant)}|${t.amount}')">
+        <div class="dd-txn-date">${monthShort[d.getMonth()]} ${d.getDate()}</div>
+        <div class="dd-txn-main">
+          <div class="dd-txn-merch">${esc(t.merchant)}</div>
+          <div class="dd-txn-cat">${esc(t.card)}</div>
+        </div>
+        <div class="dd-txn-amts">
+          <div class="dd-txn-amt">$${t.amount.toFixed(2)}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="dd-header">
+      <div class="dd-card-name">${esc(category)}</div>
+      ${cat.bucket ? `<div class="dd-card-issuer dd-link" onclick="event.stopPropagation(); openDrilldown('bucket', '${esc(cat.bucket)}')">${esc(cat.bucket)} bucket ›</div>` : ''}
+    </div>
+
+    <div class="dd-summary">
+      <div class="dd-stat">
+        <div class="dd-stat-label">Spent</div>
+        <div class="dd-stat-val">$${Math.round(cat.spent).toLocaleString()}</div>
+        <div class="dd-stat-sub">${cat.budget > 0 ? Math.round(pctOfBudget) + '% of budget' : 'no budget'}</div>
+      </div>
+      <div class="dd-stat">
+        <div class="dd-stat-label">Budget</div>
+        <div class="dd-stat-val">$${Math.round(cat.budget).toLocaleString()}</div>
+        <div class="dd-stat-sub">monthly</div>
+      </div>
+      <div class="dd-stat">
+        <div class="dd-stat-label">Projected</div>
+        <div class="dd-stat-val ${projectedOver ? 'warn' : ''}">$${Math.round(projected).toLocaleString()}</div>
+        <div class="dd-stat-sub">${cat.budget > 0 ? (projectedOver ? '+$' + Math.round(overUnder) + ' over' : '$' + Math.round(-overUnder) + ' under') : 'at month end'}</div>
+      </div>
+    </div>
+
+    ${cat.budget > 0 ? `
+    <div class="dd-section">
+      <div class="dd-section-head">Pacing</div>
+      <div class="dd-pace-card">
+        <div class="dd-pace-track">
+          <div class="dd-pace-fill ${isOver ? 'over' : ''}" style="width:${Math.min(100, pctOfBudget)}%"></div>
+          <div class="dd-pace-marker" style="left:${Math.min(100, (day/lastDay)*100)}%"></div>
+        </div>
+        <div class="dd-pace-meta">
+          <span><strong>$${dayPace.toFixed(2)}</strong>/day this month</span>
+          <span>day ${day} of ${lastDay}</span>
+        </div>
+      </div>
+    </div>` : ''}
+
+    ${cardRows ? `
+    <div class="dd-section">
+      <div class="dd-section-head">By card</div>
+      <div class="dd-cats">${cardRows}</div>
+    </div>` : ''}
+
+    ${bucketHistory ? `
+    <div class="dd-section">
+      <div class="dd-section-head">${esc(cat.bucket || 'Bucket')} bucket — last ${bucketHistory.length} months</div>
+      <div class="dd-trend-detail">${renderInlineTrendChart(bucketHistory)}</div>
+    </div>` : ''}
+
+    <div class="dd-section">
+      <div class="dd-section-head">${totalCount} transaction${totalCount === 1 ? '' : 's'}${totalCount > 0 ? ' · avg $' + avgTxn.toFixed(2) : ''}</div>
+      <div class="dd-txns">${txnRows}</div>
+    </div>
+  `;
+}
+
+// ===========================================
+// TREND (BUCKET) DRILL-DOWN
+// ===========================================
+function renderTrendDrilldown(bucketKey) {
+  const months = DATA.mom;
+  if (months.length === 0) return '<div class="dd-empty">No history yet</div>';
+
+  const labels = {
+    total: 'Total spending', housing: 'Housing', food: 'Food',
+    transport: 'Transportation', lifestyle: 'Lifestyle', subscriptions: 'Subscriptions'
+  };
+  const label = labels[bucketKey] || bucketKey;
+
+  const series = months.map(m => ({ month: m.month, val: m[bucketKey] || 0 }));
+  const values = series.map(s => s.val);
+  const last = values[values.length - 1];
+  const prev = values[values.length - 2] || 0;
+  const avg = values.reduce((a, b) => a + b, 0) / values.length;
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  const maxMonth = series[values.indexOf(max)];
+  const minMonth = series[values.indexOf(min)];
+  const delta = prev > 0 ? ((last - prev) / prev) * 100 : 0;
+  const vsAvg = avg > 0 ? ((last - avg) / avg) * 100 : 0;
+
+  // Categories that contribute to this bucket (looked up from cats)
+  const bucketDisplay = {
+    housing: 'Housing', food: 'Food', transport: 'Transportation',
+    lifestyle: 'Lifestyle', subscriptions: 'Subscriptions'
+  }[bucketKey];
+
+  let categoryBreakdown = '';
+  if (bucketDisplay) {
+    const catsInBucket = DATA.cats.filter(c => c.bucket === bucketDisplay && c.spent > 0)
+      .sort((a, b) => b.spent - a.spent);
+    if (catsInBucket.length > 0) {
+      const totalBucket = catsInBucket.reduce((a, c) => a + c.spent, 0);
+      categoryBreakdown = `
+        <div class="dd-section">
+          <div class="dd-section-head">This month — by category</div>
+          <div class="dd-cats">
+            ${catsInBucket.map(c => `
+              <div class="dd-cat-row" onclick="event.stopPropagation(); openDrilldown('mover', '${esc(c.category)}')">
+                <div class="dd-cat-main">
+                  <div class="dd-cat-name">${esc(c.category)}</div>
+                  <div class="dd-cat-meta">${totalBucket > 0 ? Math.round((c.spent/totalBucket)*100) : 0}% of bucket${c.budget > 0 ? ' · ' + Math.round((c.spent/c.budget)*100) + '% of budget' : ''}</div>
+                </div>
+                <div class="dd-cat-amt">
+                  <div class="dd-cat-spent">$${Math.round(c.spent).toLocaleString()}</div>
+                </div>
+              </div>`).join('')}
+          </div>
+        </div>`;
+    }
+  }
+
+  return `
+    <div class="dd-header">
+      <div class="dd-card-name">${esc(label)}</div>
+      <div class="dd-card-issuer">${months.length}-month trend</div>
+    </div>
+
+    <div class="dd-summary">
+      <div class="dd-stat">
+        <div class="dd-stat-label">This month</div>
+        <div class="dd-stat-val">$${Math.round(last).toLocaleString()}</div>
+        <div class="dd-stat-sub ${delta > 0 ? '' : 'good'}">${delta >= 0 ? '↑' : '↓'} ${Math.abs(Math.round(delta))}% vs last</div>
+      </div>
+      <div class="dd-stat">
+        <div class="dd-stat-label">${months.length}-mo avg</div>
+        <div class="dd-stat-val">$${Math.round(avg).toLocaleString()}</div>
+        <div class="dd-stat-sub">${vsAvg >= 0 ? '+' : ''}${Math.round(vsAvg)}% this month</div>
+      </div>
+      <div class="dd-stat">
+        <div class="dd-stat-label">Range</div>
+        <div class="dd-stat-val">$${Math.round(max - min).toLocaleString()}</div>
+        <div class="dd-stat-sub">spread</div>
+      </div>
+    </div>
+
+    <div class="dd-section">
+      <div class="dd-section-head">Monthly history</div>
+      <div class="dd-trend-detail">${renderInlineTrendChart(series, true)}</div>
+    </div>
+
+    <div class="dd-section">
+      <div class="dd-section-head">By month</div>
+      <div class="dd-cats">
+        ${[...series].reverse().map((s, idx) => {
+          const isMax = s.val === max && max > 0;
+          const isMin = s.val === min && idx !== series.length - 1;
+          return `
+            <div class="dd-cat-row" onclick="event.stopPropagation(); openDrilldown('month', '${esc(s.month)}')">
+              <div class="dd-cat-main">
+                <div class="dd-cat-name">${esc(s.month)} ${isMax ? '<span class="dd-tag">peak</span>' : ''}${isMin ? '<span class="dd-tag dim">low</span>' : ''}</div>
+                <div class="dd-cat-meta">${avg > 0 ? (s.val >= avg ? '+' : '') + Math.round(((s.val - avg) / avg) * 100) + '% vs avg' : ''}</div>
+              </div>
+              <div class="dd-cat-amt">
+                <div class="dd-cat-spent">$${Math.round(s.val).toLocaleString()}</div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    ${categoryBreakdown}
+  `;
+}
+
+// ===========================================
+// TRANSACTION DRILL-DOWN
+// ===========================================
+function renderTransactionDrilldown(key) {
+  // key = "date|merchant|amount" (rough disambiguator)
+  const [date, merchant, amountStr] = key.split('|');
+  const amount = parseFloat(amountStr);
+  const txn = DATA.recent.find(t => t.date === date && t.merchant === merchant && Math.abs(t.amount - amount) < 0.01);
+  if (!txn) return '<div class="dd-empty">Transaction not found</div>';
+
+  const cardInfo = CARDS[txn.card];
+  const rate = rewardRate(txn.card, txn.category);
+  const earned = txn.amount * (rate / 100);
+  const opt = optimalCardFor(txn.category);
+  const optInfo = CARDS[opt.card];
+  const optEarned = txn.amount * (opt.rate / 100);
+  const missed = optEarned - earned;
+  const isOpt = rate >= opt.rate - 0.001;
+
+  // Find similar transactions at this merchant
+  const merchantHistory = DATA.recent
+    .filter(t => t.merchant === merchant)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const merchantTotal = merchantHistory.reduce((a, t) => a + t.amount, 0);
+  const merchantAvg = merchantHistory.length > 0 ? merchantTotal / merchantHistory.length : 0;
+
+  const monthShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const d = new Date(date + 'T12:00:00');
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+  return `
+    <div class="dd-header">
+      <div class="dd-card-name">${esc(merchant)}</div>
+      <div class="dd-card-issuer">${days[d.getDay()]}, ${monthShort[d.getMonth()]} ${d.getDate()}</div>
+    </div>
+
+    <div class="dd-amount-hero">
+      <div class="dd-amount-big">$${txn.amount.toFixed(2)}</div>
+      <div class="dd-amount-meta">
+        <span class="dd-link-inline" onclick="event.stopPropagation(); openDrilldown('mover', '${esc(txn.category)}')">${esc(txn.category)} ›</span>
+        ${txn.bucket ? ` · <span class="dd-link-inline" onclick="event.stopPropagation(); openDrilldown('bucket', '${esc(txn.bucket)}')">${esc(txn.bucket)} ›</span>` : ''}
+      </div>
+    </div>
+
+    <div class="dd-section">
+      <div class="dd-section-head">Card used</div>
+      <div class="dd-cats">
+        <div class="dd-cat-row" onclick="event.stopPropagation(); openDrilldown('card', '${esc(txn.card)}')">
+          <div class="dd-cat-main">
+            <div class="dd-cat-name">${esc(cardInfo ? cardInfo.name : txn.card)}</div>
+            <div class="dd-cat-meta">earning ${rate}% · +$${earned.toFixed(2)}</div>
+          </div>
+          <div class="dd-cat-amt">
+            <div class="dd-cat-earned">${rate}%</div>
+          </div>
+        </div>
+        ${!isOpt ? `
+        <div class="dd-cat-row">
+          <div class="dd-cat-main">
+            <div class="dd-cat-name">${esc(optInfo ? optInfo.name : opt.card)} <span class="dd-tag good">better</span></div>
+            <div class="dd-cat-meta">would earn ${opt.rate}% · +$${optEarned.toFixed(2)}</div>
+          </div>
+          <div class="dd-cat-amt">
+            <div class="dd-cat-earned">+$${missed.toFixed(2)}</div>
+          </div>
+        </div>` : ''}
+      </div>
+    </div>
+
+    ${merchantHistory.length > 1 ? `
+    <div class="dd-section">
+      <div class="dd-section-head" onclick="event.stopPropagation(); openDrilldown('merchant', '${esc(merchant)}')" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+        <span>${merchantHistory.length} visits to ${esc(merchant)}</span>
+        <span style="font-size:10px; color:var(--accent); font-weight:600;">VIEW ALL ›</span>
+      </div>
+      <div class="dd-summary">
+        <div class="dd-stat">
+          <div class="dd-stat-label">Total</div>
+          <div class="dd-stat-val">$${Math.round(merchantTotal).toLocaleString()}</div>
+          <div class="dd-stat-sub">all-time</div>
+        </div>
+        <div class="dd-stat">
+          <div class="dd-stat-label">Average</div>
+          <div class="dd-stat-val">$${merchantAvg.toFixed(2)}</div>
+          <div class="dd-stat-sub">per visit</div>
+        </div>
+        <div class="dd-stat">
+          <div class="dd-stat-label">Visits</div>
+          <div class="dd-stat-val">${merchantHistory.length}</div>
+          <div class="dd-stat-sub">recorded</div>
+        </div>
+      </div>
+      <div class="dd-txns" style="margin-top:10px">
+        ${merchantHistory.slice(0, 8).map(t => {
+          const dt = new Date(t.date + 'T12:00:00');
+          return `
+            <div class="dd-txn" onclick="event.stopPropagation(); openDrilldown('txn', '${esc(t.date)}|${esc(t.merchant)}|${t.amount}')">
+              <div class="dd-txn-date">${monthShort[dt.getMonth()]} ${dt.getDate()}</div>
+              <div class="dd-txn-main">
+                <div class="dd-txn-merch">${esc(t.card)}</div>
+                <div class="dd-txn-cat">${esc(t.category)}</div>
+              </div>
+              <div class="dd-txn-amts">
+                <div class="dd-txn-amt">$${t.amount.toFixed(2)}</div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>` : ''}
+  `;
+}
+
+// ===========================================
+// HERO (PROJECTION) DRILL-DOWN
+// ===========================================
+function renderHeroDrilldown() {
+  const totalSpent = DATA.cats.reduce((a, c) => a + c.spent, 0);
+  const totalBudget = DATA.cats.reduce((a, c) => a + c.budget, 0);
+  const now = new Date();
+  const day = now.getDate();
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const daysLeft = lastDay - day;
+  const dailyPace = day > 0 ? totalSpent / day : 0;
+  const projected = dailyPace * lastDay;
+  const overUnder = projected - totalBudget;
+
+  // Daily spend reconstruction from transactions
+  const dailyTotals = {};
+  DATA.recent.forEach(t => {
+    if (t.date.startsWith(now.toISOString().slice(0, 7))) {
+      dailyTotals[t.date] = (dailyTotals[t.date] || 0) + t.amount;
+    }
+  });
+  const sortedDays = Object.keys(dailyTotals).sort();
+  const dayValues = sortedDays.map(d => dailyTotals[d]);
+  const maxDay = Math.max(...dayValues, 1);
+
+  // Top buckets contributing to projection
+  const buckets = ['Housing', 'Food', 'Transportation', 'Lifestyle', 'Subscriptions'];
+  const bucketSpend = {};
+  DATA.cats.forEach(c => {
+    if (c.bucket) bucketSpend[c.bucket] = (bucketSpend[c.bucket] || 0) + c.spent;
+  });
+  const bucketRows = Object.entries(bucketSpend)
+    .filter(([_, v]) => v > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, val]) => {
+      const projForBucket = day > 0 ? (val / day) * lastDay : 0;
+      return `
+        <div class="dd-cat-row" onclick="event.stopPropagation(); openDrilldown('bucket', '${esc(name)}')">
+          <div class="dd-cat-main">
+            <div class="dd-cat-name">${esc(name)}</div>
+            <div class="dd-cat-meta">$${val.toFixed(2)} so far · projecting $${projForBucket.toFixed(0)}</div>
+          </div>
+          <div class="dd-cat-amt">
+            <div class="dd-cat-spent">${totalSpent > 0 ? Math.round((val / totalSpent) * 100) : 0}%</div>
+          </div>
+        </div>`;
+    }).join('');
+
+  const monthShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const monthName = monthShort[now.getMonth()];
+
+  return `
+    <div class="dd-header">
+      <div class="dd-card-name">Month projection</div>
+      <div class="dd-card-issuer">${monthName} ${now.getFullYear()}</div>
+    </div>
+
+    <div class="dd-amount-hero">
+      <div class="dd-amount-big">$${Math.round(projected).toLocaleString()}</div>
+      <div class="dd-amount-meta">${overUnder > 0 ? '+$' + Math.round(overUnder) + ' over' : '$' + Math.round(-overUnder) + ' under'} the $${Math.round(totalBudget).toLocaleString()} budget</div>
+    </div>
+
+    <div class="dd-summary">
+      <div class="dd-stat">
+        <div class="dd-stat-label">Spent</div>
+        <div class="dd-stat-val">$${Math.round(totalSpent).toLocaleString()}</div>
+        <div class="dd-stat-sub">through day ${day}</div>
+      </div>
+      <div class="dd-stat">
+        <div class="dd-stat-label">Daily avg</div>
+        <div class="dd-stat-val">$${Math.round(dailyPace).toLocaleString()}</div>
+        <div class="dd-stat-sub">past ${day} days</div>
+      </div>
+      <div class="dd-stat">
+        <div class="dd-stat-label">Days left</div>
+        <div class="dd-stat-val">${daysLeft}</div>
+        <div class="dd-stat-sub">of ${lastDay}</div>
+      </div>
+    </div>
+
+    <div class="dd-section">
+      <div class="dd-section-head">How the projection works</div>
+      <div class="dd-explainer">
+        Spent <strong>$${Math.round(totalSpent).toLocaleString()}</strong> in ${day} day${day === 1 ? '' : 's'} → averaging <strong>$${Math.round(dailyPace)}/day</strong>. At that pace, ${daysLeft} more day${daysLeft === 1 ? '' : 's'} adds <strong>$${Math.round(dailyPace * daysLeft).toLocaleString()}</strong>, landing at <strong>$${Math.round(projected).toLocaleString()}</strong> by month end.
+      </div>
+    </div>
+
+    ${dayValues.length > 0 ? `
+    <div class="dd-section">
+      <div class="dd-section-head">Daily spend this month</div>
+      <div class="dd-daily-chart">
+        ${sortedDays.map((d, i) => {
+          const v = dayValues[i];
+          const h = (v / maxDay) * 100;
+          const dt = new Date(d + 'T12:00:00');
+          return `
+            <div class="dd-day-bar dd-day-bar-tap" onclick="event.stopPropagation(); openDrilldown('day', '${esc(d)}')" title="${monthShort[dt.getMonth()]} ${dt.getDate()}: $${v.toFixed(2)}">
+              <div class="dd-day-fill" style="height:${h}%"></div>
+              <div class="dd-day-label">${dt.getDate()}</div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>` : ''}
+
+    ${bucketRows ? `
+    <div class="dd-section">
+      <div class="dd-section-head">By bucket</div>
+      <div class="dd-cats">${bucketRows}</div>
+    </div>` : ''}
+  `;
+}
+
+// ===========================================
+// KPI DRILL-DOWN — daily avg / days left / available
+// ===========================================
+function renderKpiDrilldown(kpi) {
+  const totalSpent = DATA.cats.reduce((a, c) => a + c.spent, 0);
+  const totalBudget = DATA.cats.reduce((a, c) => a + c.budget, 0);
+  const now = new Date();
+  const day = now.getDate();
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const daysLeft = lastDay - day;
+  const avg = day > 0 ? totalSpent / day : 0;
+  const idealAvg = totalBudget / lastDay;
+  const available = totalBudget - totalSpent;
+  const dailyAvail = daysLeft > 0 ? available / daysLeft : 0;
+
+  if (kpi === 'avg') {
+    const headroom = idealAvg - avg;
+    return `
+      <div class="dd-header">
+        <div class="dd-card-name">Daily average</div>
+        <div class="dd-card-issuer">Spending pace</div>
+      </div>
+      <div class="dd-amount-hero">
+        <div class="dd-amount-big">$${Math.round(avg).toLocaleString()}</div>
+        <div class="dd-amount-meta">averaged across ${day} day${day === 1 ? '' : 's'} this month</div>
+      </div>
+      <div class="dd-summary">
+        <div class="dd-stat">
+          <div class="dd-stat-label">Target pace</div>
+          <div class="dd-stat-val">$${Math.round(idealAvg).toLocaleString()}</div>
+          <div class="dd-stat-sub">to hit budget</div>
+        </div>
+        <div class="dd-stat">
+          <div class="dd-stat-label">${headroom >= 0 ? 'Headroom' : 'Overpace'}</div>
+          <div class="dd-stat-val ${headroom >= 0 ? 'good' : 'warn'}">${headroom >= 0 ? '+' : ''}$${Math.round(headroom)}</div>
+          <div class="dd-stat-sub">per day</div>
+        </div>
+        <div class="dd-stat">
+          <div class="dd-stat-label">Total so far</div>
+          <div class="dd-stat-val">$${Math.round(totalSpent).toLocaleString()}</div>
+          <div class="dd-stat-sub">this month</div>
+        </div>
+      </div>
+      <div class="dd-section">
+        <div class="dd-section-head">What this means</div>
+        <div class="dd-explainer">
+          ${headroom >= 0
+            ? `You're spending <strong>$${Math.round(avg)}/day</strong>, which is <strong>$${Math.round(headroom)}</strong> below the pace needed to hit your $${Math.round(totalBudget).toLocaleString()} monthly budget. Maintaining this pace lands you ~<strong>$${Math.round(headroom * lastDay).toLocaleString()}</strong> under budget.`
+            : `You're spending <strong>$${Math.round(avg)}/day</strong>, which is <strong>$${Math.abs(Math.round(headroom))}</strong> above the pace needed to hit your $${Math.round(totalBudget).toLocaleString()} monthly budget. Maintaining this pace puts you ~<strong>$${Math.abs(Math.round(headroom * lastDay)).toLocaleString()}</strong> over budget.`}
+        </div>
+      </div>
+    `;
+  }
+
+  if (kpi === 'days') {
+    const monthShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `
+      <div class="dd-header">
+        <div class="dd-card-name">Days remaining</div>
+        <div class="dd-card-issuer">${monthShort[now.getMonth()]} ${now.getFullYear()}</div>
+      </div>
+      <div class="dd-amount-hero">
+        <div class="dd-amount-big">${daysLeft}</div>
+        <div class="dd-amount-meta">${daysLeft === 1 ? 'day' : 'days'} until ${monthShort[(now.getMonth()+1) % 12]} 1</div>
+      </div>
+      <div class="dd-summary">
+        <div class="dd-stat">
+          <div class="dd-stat-label">Today</div>
+          <div class="dd-stat-val">${day}</div>
+          <div class="dd-stat-sub">of ${lastDay}</div>
+        </div>
+        <div class="dd-stat">
+          <div class="dd-stat-label">Elapsed</div>
+          <div class="dd-stat-val">${Math.round((day/lastDay)*100)}%</div>
+          <div class="dd-stat-sub">of month</div>
+        </div>
+        <div class="dd-stat">
+          <div class="dd-stat-label">Budget elapsed</div>
+          <div class="dd-stat-val ${totalBudget > 0 && (totalSpent/totalBudget) > (day/lastDay) ? 'warn' : 'good'}">${totalBudget > 0 ? Math.round((totalSpent/totalBudget)*100) : 0}%</div>
+          <div class="dd-stat-sub">of monthly</div>
+        </div>
+      </div>
+      <div class="dd-section">
+        <div class="dd-section-head">Pacing context</div>
+        <div class="dd-explainer">
+          ${(() => {
+            if (totalBudget <= 0) return 'Set a budget to see pacing analysis.';
+            const tPct = (day/lastDay) * 100;
+            const sPct = (totalSpent/totalBudget) * 100;
+            if (sPct > tPct + 5) return `Calendar is <strong>${Math.round(tPct)}%</strong> through the month but you've already used <strong>${Math.round(sPct)}%</strong> of the budget. Pull back to recalibrate.`;
+            if (sPct < tPct - 5) return `Calendar is <strong>${Math.round(tPct)}%</strong> through the month, you've used only <strong>${Math.round(sPct)}%</strong> of budget. You have room.`;
+            return `Calendar at <strong>${Math.round(tPct)}%</strong> and budget at <strong>${Math.round(sPct)}%</strong>. Right on pace.`;
+          })()}
+        </div>
+      </div>
+    `;
+  }
+
+  if (kpi === 'avail') {
+    // breakdown by bucket
+    const bucketSpend = {};
+    const bucketBudget = {};
+    DATA.cats.forEach(c => {
+      if (c.bucket) {
+        bucketSpend[c.bucket] = (bucketSpend[c.bucket] || 0) + c.spent;
+        bucketBudget[c.bucket] = (bucketBudget[c.bucket] || 0) + c.budget;
+      }
+    });
+    const bucketRows = Object.keys(bucketBudget).map(b => {
+      const left = bucketBudget[b] - bucketSpend[b];
+      const isOver = left < 0;
+      return `
+        <div class="dd-cat-row" onclick="event.stopPropagation(); openDrilldown('bucket', '${esc(b)}')">
+          <div class="dd-cat-main">
+            <div class="dd-cat-name">${esc(b)}</div>
+            <div class="dd-cat-meta">$${Math.round(bucketSpend[b]).toLocaleString()} of $${Math.round(bucketBudget[b]).toLocaleString()}</div>
+          </div>
+          <div class="dd-cat-amt">
+            <div class="dd-cat-spent ${isOver ? 'warn' : ''}" style="${isOver ? 'color:var(--accent)' : ''}">${isOver ? '-' : ''}$${Math.abs(Math.round(left)).toLocaleString()}</div>
+            <div class="dd-cat-earned sub">${isOver ? 'over' : 'left'}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="dd-header">
+        <div class="dd-card-name">Available</div>
+        <div class="dd-card-issuer">Budget remaining</div>
+      </div>
+      <div class="dd-amount-hero">
+        <div class="dd-amount-big ${available < 0 ? 'warn' : ''}">${available < 0 ? '-' : ''}$${Math.abs(Math.round(available)).toLocaleString()}</div>
+        <div class="dd-amount-meta">${available > 0 ? `~$${Math.round(dailyAvail)}/day for ${daysLeft} more day${daysLeft === 1 ? '' : 's'}` : 'over budget'}</div>
+      </div>
+      <div class="dd-summary">
+        <div class="dd-stat">
+          <div class="dd-stat-label">Budget</div>
+          <div class="dd-stat-val">$${Math.round(totalBudget).toLocaleString()}</div>
+          <div class="dd-stat-sub">monthly total</div>
+        </div>
+        <div class="dd-stat">
+          <div class="dd-stat-label">Spent</div>
+          <div class="dd-stat-val">$${Math.round(totalSpent).toLocaleString()}</div>
+          <div class="dd-stat-sub">${totalBudget > 0 ? Math.round((totalSpent/totalBudget)*100) + '%' : ''}</div>
+        </div>
+        <div class="dd-stat">
+          <div class="dd-stat-label">Per day</div>
+          <div class="dd-stat-val">$${Math.round(dailyAvail).toLocaleString()}</div>
+          <div class="dd-stat-sub">to stay on track</div>
+        </div>
+      </div>
+      ${bucketRows ? `
+      <div class="dd-section">
+        <div class="dd-section-head">By bucket</div>
+        <div class="dd-cats">${bucketRows}</div>
+      </div>` : ''}
+    `;
+  }
+
+  return '<div class="dd-empty">Unknown metric</div>';
+}
+
+// ===========================================
+// DAY DRILL-DOWN — all transactions on a single day
+// ===========================================
+function renderDayDrilldown(date) {
+  const txns = DATA.recent.filter(t => t.date === date).sort((a, b) => b.amount - a.amount);
+  if (txns.length === 0) return '<div class="dd-empty">No transactions that day</div>';
+
+  const total = txns.reduce((a, t) => a + t.amount, 0);
+  const monthShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const d = new Date(date + 'T12:00:00');
+
+  // By card
+  const byCard = {};
+  txns.forEach(t => { byCard[t.card] = (byCard[t.card] || 0) + t.amount; });
+
+  // By bucket
+  const byBucket = {};
+  txns.forEach(t => { byBucket[t.bucket || 'Uncategorized'] = (byBucket[t.bucket || 'Uncategorized'] || 0) + t.amount; });
+
+  return `
+    <div class="dd-header">
+      <div class="dd-card-name">${days[d.getDay()]}, ${monthShort[d.getMonth()]} ${d.getDate()}</div>
+      <div class="dd-card-issuer">${txns.length} transaction${txns.length === 1 ? '' : 's'}</div>
+    </div>
+
+    <div class="dd-amount-hero">
+      <div class="dd-amount-big">$${total.toFixed(2)}</div>
+      <div class="dd-amount-meta">total spent</div>
+    </div>
+
+    <div class="dd-section">
+      <div class="dd-section-head">Transactions</div>
+      <div class="dd-txns">
+        ${txns.map(t => {
+          const rate = rewardRate(t.card, t.category);
+          const earned = t.amount * (rate / 100);
+          return `
+            <div class="dd-txn" onclick="event.stopPropagation(); openDrilldown('txn', '${esc(t.date)}|${esc(t.merchant)}|${t.amount}')">
+              <div class="dd-txn-date" style="text-align:left">${esc(t.card.split(' ')[0])}</div>
+              <div class="dd-txn-main">
+                <div class="dd-txn-merch">${esc(t.merchant)}</div>
+                <div class="dd-txn-cat">${esc(t.category)}</div>
+              </div>
+              <div class="dd-txn-amts">
+                <div class="dd-txn-amt">$${t.amount.toFixed(2)}</div>
+                <div class="dd-txn-rate">${rate}% · +$${earned.toFixed(2)}</div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="dd-section">
+      <div class="dd-section-head">By card</div>
+      <div class="dd-cats">
+        ${Object.entries(byCard).sort((a, b) => b[1] - a[1]).map(([card, amt]) => {
+          const info = CARDS[card];
+          return `
+            <div class="dd-cat-row" onclick="event.stopPropagation(); openDrilldown('card', '${esc(card)}')">
+              <div class="dd-cat-main">
+                <div class="dd-cat-name">${esc(info ? info.issuer : card)}</div>
+                <div class="dd-cat-meta">${esc(info ? info.name : '')}</div>
+              </div>
+              <div class="dd-cat-amt">
+                <div class="dd-cat-spent">$${amt.toFixed(2)}</div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="dd-section">
+      <div class="dd-section-head">By bucket</div>
+      <div class="dd-cats">
+        ${Object.entries(byBucket).sort((a, b) => b[1] - a[1]).map(([bucket, amt]) => `
+          <div class="dd-cat-row" onclick="event.stopPropagation(); openDrilldown('bucket', '${esc(bucket)}')">
+            <div class="dd-cat-main">
+              <div class="dd-cat-name">${esc(bucket)}</div>
+              <div class="dd-cat-meta">${Math.round((amt/total)*100)}% of day</div>
+            </div>
+            <div class="dd-cat-amt">
+              <div class="dd-cat-spent">$${amt.toFixed(2)}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ===========================================
+// SHARED — inline trend bar chart for drilldowns
+// ===========================================
+function renderInlineTrendChart(series, labeled) {
+  if (!series || series.length === 0) return '';
+  const values = series.map(s => s.val);
+  const max = Math.max(...values, 1);
+  const w = 320, h = 100;
+  const stepX = series.length > 1 ? w / series.length : w;
+  const barW = stepX * 0.65;
+  const padX = (stepX - barW) / 2;
+
+  return `
+    <svg viewBox="0 0 ${w} ${h + (labeled ? 22 : 4)}" preserveAspectRatio="none" class="dd-chart-svg">
+      ${series.map((s, i) => {
+        const bx = i * stepX + padX;
+        const bh = (s.val / max) * h;
+        const by = h - bh;
+        const isLast = i === series.length - 1;
+        return `
+          <rect x="${bx}" y="${by}" width="${barW}" height="${Math.max(bh, 1)}" rx="3" fill="${isLast ? 'var(--fg)' : 'var(--fg-4)'}"/>
+          ${labeled ? `<text x="${bx + barW/2}" y="${h + 14}" text-anchor="middle" font-size="9" fill="var(--fg-3)" font-family="JetBrains Mono">${esc(s.month)}</text>` : ''}
+        `;
+      }).join('')}
+    </svg>
+  `;
+}
+
+// ===========================================
+// MERCHANT DRILL-DOWN — all visits to one merchant
+// ===========================================
+function renderMerchantDrilldown(merchant) {
+  const visits = DATA.recent.filter(t => t.merchant === merchant)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  if (visits.length === 0) return '<div class="dd-empty">No transactions</div>';
+
+  const total = visits.reduce((a, t) => a + t.amount, 0);
+  const avg = total / visits.length;
+  const max = Math.max(...visits.map(v => v.amount));
+  const min = Math.min(...visits.map(v => v.amount));
+
+  // Cards used at this merchant
+  const byCard = {};
+  visits.forEach(t => { byCard[t.card] = (byCard[t.card] || 0) + t.amount; });
+
+  // Categories used (usually one but could be multiple)
+  const byCat = {};
+  visits.forEach(t => { byCat[t.category] = (byCat[t.category] || 0) + t.amount; });
+
+  // Frequency pattern — days between visits
+  let avgDays = 0;
+  if (visits.length >= 2) {
+    const dates = visits.map(v => new Date(v.date + 'T12:00:00').getTime()).sort();
+    const diffs = [];
+    for (let i = 1; i < dates.length; i++) diffs.push((dates[i] - dates[i-1]) / 86400000);
+    avgDays = diffs.reduce((a, b) => a + b, 0) / diffs.length;
+  }
+
+  const monthShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  // Day-of-week pattern
+  const dowCounts = [0,0,0,0,0,0,0];
+  visits.forEach(v => { dowCounts[new Date(v.date + 'T12:00:00').getDay()]++; });
+  const topDow = dowCounts.indexOf(Math.max(...dowCounts));
+
+  const optCard = optimalCardFor(visits[0].category);
+  const optInfo = CARDS[optCard.card];
+
+  return `
+    <div class="dd-header">
+      <div class="dd-card-name">${esc(merchant)}</div>
+      <div class="dd-card-issuer">${visits.length} visits${avgDays > 0 ? ` · every ${Math.round(avgDays)} days` : ''}</div>
+    </div>
+
+    <div class="dd-amount-hero">
+      <div class="dd-amount-big">$${total.toFixed(2)}</div>
+      <div class="dd-amount-meta">total spent · avg $${avg.toFixed(2)}/visit</div>
+    </div>
+
+    <div class="dd-summary">
+      <div class="dd-stat">
+        <div class="dd-stat-label">Highest</div>
+        <div class="dd-stat-val">$${max.toFixed(2)}</div>
+        <div class="dd-stat-sub">single visit</div>
+      </div>
+      <div class="dd-stat">
+        <div class="dd-stat-label">Lowest</div>
+        <div class="dd-stat-val">$${min.toFixed(2)}</div>
+        <div class="dd-stat-sub">single visit</div>
+      </div>
+      <div class="dd-stat">
+        <div class="dd-stat-label">Best day</div>
+        <div class="dd-stat-val">${days[topDow]}</div>
+        <div class="dd-stat-sub">${dowCounts[topDow]} visits</div>
+      </div>
+    </div>
+
+    <div class="dd-section">
+      <div class="dd-section-head">By card used</div>
+      <div class="dd-cats">
+        ${Object.entries(byCard).sort((a,b)=>b[1]-a[1]).map(([card, amt]) => {
+          const info = CARDS[card];
+          const rate = rewardRate(card, visits[0].category);
+          const isOpt = rate >= optCard.rate - 0.001;
+          return `
+            <div class="dd-cat-row" onclick="event.stopPropagation(); openDrilldown('card', '${esc(card)}')">
+              <div class="dd-cat-main">
+                <div class="dd-cat-name">${esc(info ? info.issuer : card)}</div>
+                <div class="dd-cat-meta">${rate}% rewards · +$${(amt * rate / 100).toFixed(2)} earned${!isOpt ? ` · ${optInfo?.issuer || optCard.card} would earn ${optCard.rate}%` : ''}</div>
+              </div>
+              <div class="dd-cat-amt">
+                <div class="dd-cat-spent">$${amt.toFixed(2)}</div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    ${Object.keys(byCat).length > 1 ? `
+    <div class="dd-section">
+      <div class="dd-section-head">Categorized as</div>
+      <div class="dd-cats">
+        ${Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([cat, amt]) => `
+          <div class="dd-cat-row" onclick="event.stopPropagation(); openDrilldown('mover', '${esc(cat)}')">
+            <div class="dd-cat-main">
+              <div class="dd-cat-name">${esc(cat)}</div>
+              <div class="dd-cat-meta">${Math.round((amt/total)*100)}% of merchant total</div>
+            </div>
+            <div class="dd-cat-amt">
+              <div class="dd-cat-spent">$${amt.toFixed(2)}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <div class="dd-section">
+      <div class="dd-section-head">All ${visits.length} visit${visits.length === 1 ? '' : 's'}</div>
+      <div class="dd-txns">
+        ${visits.map(t => {
+          const dt = new Date(t.date + 'T12:00:00');
+          const r = rewardRate(t.card, t.category);
+          return `
+            <div class="dd-txn" onclick="event.stopPropagation(); openDrilldown('txn', '${esc(t.date)}|${esc(t.merchant)}|${t.amount}')">
+              <div class="dd-txn-date">${monthShort[dt.getMonth()]} ${dt.getDate()}</div>
+              <div class="dd-txn-main">
+                <div class="dd-txn-merch">${days[dt.getDay()]}</div>
+                <div class="dd-txn-cat">${esc(t.card)}</div>
+              </div>
+              <div class="dd-txn-amts">
+                <div class="dd-txn-amt">$${t.amount.toFixed(2)}</div>
+                <div class="dd-txn-rate">${r}%</div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ===========================================
+// BUCKET DRILL-DOWN — entire spending bucket (Housing, Food, etc.)
+// ===========================================
+function renderBucketDrilldown(bucket) {
+  const cats = DATA.cats.filter(c => c.bucket === bucket);
+  if (cats.length === 0) return '<div class="dd-empty">No data for this bucket</div>';
+
+  const totalSpent = cats.reduce((a, c) => a + c.spent, 0);
+  const totalBudget = cats.reduce((a, c) => a + c.budget, 0);
+  const pct = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+  const isOver = pct > 100;
+  const left = totalBudget - totalSpent;
+
+  // Pacing
+  const now = new Date();
+  const day = now.getDate();
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const dayPace = day > 0 ? totalSpent / day : 0;
+  const projected = dayPace * lastDay;
+
+  // Bucket history from MoM
+  const bucketKey = bucket.toLowerCase().replace('transportation', 'transport');
+  const history = DATA.mom.filter(m => m[bucketKey] != null).map(m => ({ month: m.month, val: m[bucketKey] }));
+  const avgHist = history.length > 0 ? history.reduce((a, m) => a + m.val, 0) / history.length : 0;
+
+  // Transactions in this bucket
+  const bucketTxns = DATA.recent.filter(t => t.bucket === bucket);
+  const txnCount = bucketTxns.length;
+
+  // Top merchants in this bucket
+  const merchSpend = {};
+  bucketTxns.forEach(t => {
+    merchSpend[t.merchant] = (merchSpend[t.merchant] || 0) + t.amount;
+  });
+  const topMerchants = Object.entries(merchSpend)
+    .sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+  return `
+    <div class="dd-header">
+      <div class="dd-card-name">${esc(bucket)}</div>
+      <div class="dd-card-issuer">${cats.length} categories · ${txnCount} transaction${txnCount === 1 ? '' : 's'}</div>
+    </div>
+
+    <div class="dd-amount-hero">
+      <div class="dd-amount-big ${isOver ? 'warn' : ''}">$${Math.round(totalSpent).toLocaleString()}</div>
+      <div class="dd-amount-meta">${totalBudget > 0 ? Math.round(pct) + '% of $' + Math.round(totalBudget).toLocaleString() + ' budget' : 'no budget set'}</div>
+    </div>
+
+    <div class="dd-summary">
+      <div class="dd-stat">
+        <div class="dd-stat-label">Projected</div>
+        <div class="dd-stat-val ${totalBudget > 0 && projected > totalBudget ? 'warn' : ''}">$${Math.round(projected).toLocaleString()}</div>
+        <div class="dd-stat-sub">at month end</div>
+      </div>
+      <div class="dd-stat">
+        <div class="dd-stat-label">${left >= 0 ? 'Left' : 'Over'}</div>
+        <div class="dd-stat-val ${left < 0 ? 'warn' : 'good'}">$${Math.abs(Math.round(left)).toLocaleString()}</div>
+        <div class="dd-stat-sub">${left >= 0 ? 'this month' : 'budget'}</div>
+      </div>
+      <div class="dd-stat">
+        <div class="dd-stat-label">Daily</div>
+        <div class="dd-stat-val">$${Math.round(dayPace).toLocaleString()}</div>
+        <div class="dd-stat-sub">avg pace</div>
+      </div>
+    </div>
+
+    <div class="dd-section">
+      <div class="dd-section-head">Categories</div>
+      <div class="dd-cats">
+        ${cats.sort((a,b)=>b.spent-a.spent).map(c => {
+          const cPct = c.budget > 0 ? (c.spent/c.budget)*100 : 0;
+          const cIsOver = cPct > 100;
+          return `
+            <div class="dd-cat-row" onclick="event.stopPropagation(); openDrilldown('mover', '${esc(c.category)}')">
+              <div class="dd-cat-main">
+                <div class="dd-cat-name">${esc(c.category)}</div>
+                <div class="dd-cat-meta">${c.budget > 0 ? Math.round(cPct) + '% of $' + Math.round(c.budget) + ' budget' : 'no budget'}</div>
+              </div>
+              <div class="dd-cat-amt">
+                <div class="dd-cat-spent ${cIsOver ? 'warn' : ''}" ${cIsOver ? 'style="color:var(--accent)"' : ''}>$${Math.round(c.spent).toLocaleString()}</div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    ${topMerchants.length > 0 ? `
+    <div class="dd-section">
+      <div class="dd-section-head">Top merchants in ${esc(bucket)}</div>
+      <div class="dd-cats">
+        ${topMerchants.map(([m, amt]) => `
+          <div class="dd-cat-row" onclick="event.stopPropagation(); openDrilldown('merchant', '${esc(m)}')">
+            <div class="dd-cat-main">
+              <div class="dd-cat-name">${esc(m)}</div>
+              <div class="dd-cat-meta">${Math.round((amt/totalSpent)*100)}% of bucket</div>
+            </div>
+            <div class="dd-cat-amt">
+              <div class="dd-cat-spent">$${amt.toFixed(2)}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    ${history.length > 0 ? `
+    <div class="dd-section">
+      <div class="dd-section-head">${history.length}-month trend (avg $${Math.round(avgHist).toLocaleString()})</div>
+      <div class="dd-trend-detail">${renderInlineTrendChart(history, true)}</div>
+    </div>` : ''}
+  `;
+}
+
+// ===========================================
+// MONTH DRILL-DOWN — full breakdown for one month
+// ===========================================
+function renderMonthDrilldown(month) {
+  const monthData = DATA.mom.find(m => m.month === month);
+  if (!monthData) return '<div class="dd-empty">Month not found</div>';
+
+  // Find this month's index for vs-prev comparison
+  const idx = DATA.mom.findIndex(m => m.month === month);
+  const prev = idx > 0 ? DATA.mom[idx - 1] : null;
+  const totalDelta = prev && prev.total > 0 ? ((monthData.total - prev.total) / prev.total) * 100 : 0;
+
+  const buckets = [
+    { key: 'housing', label: 'Housing' },
+    { key: 'food', label: 'Food' },
+    { key: 'transport', label: 'Transportation' },
+    { key: 'lifestyle', label: 'Lifestyle' },
+    { key: 'subscriptions', label: 'Subscriptions' },
+  ];
+  const bucketRows = buckets.filter(b => (monthData[b.key] || 0) > 0).map(b => {
+    const v = monthData[b.key];
+    const pv = prev ? (prev[b.key] || 0) : 0;
+    const d = pv > 0 ? ((v - pv) / pv) * 100 : 0;
+    return `
+      <div class="dd-cat-row" onclick="event.stopPropagation(); openDrilldown('bucket', '${esc(b.label)}')">
+        <div class="dd-cat-main">
+          <div class="dd-cat-name">${esc(b.label)}</div>
+          <div class="dd-cat-meta">${Math.round((v/monthData.total)*100)}% of month${prev ? ` · ${d >= 0 ? '+' : ''}${Math.round(d)}% vs ${prev.month}` : ''}</div>
+        </div>
+        <div class="dd-cat-amt">
+          <div class="dd-cat-spent">$${Math.round(v).toLocaleString()}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="dd-header">
+      <div class="dd-card-name">${esc(month)}</div>
+      <div class="dd-card-issuer">Monthly snapshot</div>
+    </div>
+
+    <div class="dd-amount-hero">
+      <div class="dd-amount-big">$${Math.round(monthData.total).toLocaleString()}</div>
+      <div class="dd-amount-meta">${prev ? `${totalDelta >= 0 ? '+' : ''}${Math.round(totalDelta)}% vs ${prev.month}` : 'total spent'}</div>
+    </div>
+
+    <div class="dd-summary">
+      <div class="dd-stat">
+        <div class="dd-stat-label">Budget</div>
+        <div class="dd-stat-val">$${Math.round(monthData.budget).toLocaleString()}</div>
+        <div class="dd-stat-sub">${monthData.budget > 0 ? Math.round((monthData.total/monthData.budget)*100) + '% used' : ''}</div>
+      </div>
+      <div class="dd-stat">
+        <div class="dd-stat-label">${monthData.total <= monthData.budget ? 'Saved' : 'Over'}</div>
+        <div class="dd-stat-val ${monthData.total > monthData.budget ? 'warn' : 'good'}">$${Math.round(Math.abs(monthData.budget - monthData.total)).toLocaleString()}</div>
+        <div class="dd-stat-sub">vs budget</div>
+      </div>
+      <div class="dd-stat">
+        <div class="dd-stat-label">Top bucket</div>
+        <div class="dd-stat-val">${(() => {
+          const top = buckets.map(b => ({...b, val: monthData[b.key] || 0}))
+            .sort((a,b)=>b.val-a.val)[0];
+          return top && top.val > 0 ? top.label.slice(0, 7) : '—';
+        })()}</div>
+        <div class="dd-stat-sub">largest</div>
+      </div>
+    </div>
+
+    <div class="dd-section">
+      <div class="dd-section-head">By bucket</div>
+      <div class="dd-cats">${bucketRows}</div>
+    </div>
+  `;
+}
+
+// ===========================================
+// ACCOUNT DRILL-DOWN — checking, savings, or credit
+// ===========================================
+function renderAccountDrilldown(type) {
+  const accts = DATA.accounts || [];
+  const acct = accts.find(a => a.type === type);
+  if (!acct) {
+    return `
+      <div class="dd-empty">
+        <div style="font-weight:600; color:var(--fg); font-size:14px; margin-bottom:8px">No ${esc(type)} account linked yet</div>
+        <div style="font-size:11px; line-height:1.5; max-width:280px; margin:0 auto; color:var(--fg-3)">
+          Forward me a recent ${type === 'checking' ? 'Chase deposit/payment' : 'savings statement'} email and the parser will start populating this.
+        </div>
+      </div>`;
+  }
+
+  // For checking, find debit transactions
+  const isChecking = acct.type === 'checking';
+  const isSavings = acct.type === 'savings';
+  const txns = isChecking
+    ? DATA.recent.filter(t => t.card === 'Chase Debit' || t.card === 'Checking')
+        .sort((a, b) => b.date.localeCompare(a.date))
+    : [];
+
+  const totalOut = txns.reduce((s, t) => s + (t.amount > 0 ? t.amount : 0), 0);
+  const txnCount = txns.length;
+
+  // By category for debit
+  const byCat = {};
+  txns.forEach(t => { byCat[t.category] = (byCat[t.category] || 0) + t.amount; });
+  const topCats = Object.entries(byCat).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+  // Daily history reconstruction (last 30 days)
+  const now = new Date();
+  const last30Total = txns
+    .filter(t => {
+      const d = new Date(t.date + 'T12:00:00');
+      return (now - d) / 86400000 < 30;
+    })
+    .reduce((s, t) => s + t.amount, 0);
+
+  const monthShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  return `
+    <div class="dd-header">
+      <div class="dd-card-name">${esc(acct.account)}</div>
+      <div class="dd-card-issuer">${isChecking ? 'Checking' : isSavings ? 'Savings' : 'Account'}${acct.asOf ? ` · as of ${formatShortDate(acct.asOf)}` : ''}</div>
+    </div>
+
+    <div class="dd-amount-hero">
+      <div class="dd-amount-big">$${Math.round(acct.balance).toLocaleString()}</div>
+      <div class="dd-amount-meta">${isChecking ? 'available balance' : 'savings balance'}</div>
+    </div>
+
+    ${isChecking && txnCount > 0 ? `
+    <div class="dd-summary">
+      <div class="dd-stat">
+        <div class="dd-stat-label">Recent debits</div>
+        <div class="dd-stat-val">${txnCount}</div>
+        <div class="dd-stat-sub">transactions</div>
+      </div>
+      <div class="dd-stat">
+        <div class="dd-stat-label">Last 30d</div>
+        <div class="dd-stat-val">$${Math.round(last30Total).toLocaleString()}</div>
+        <div class="dd-stat-sub">debited</div>
+      </div>
+      <div class="dd-stat">
+        <div class="dd-stat-label">Avg txn</div>
+        <div class="dd-stat-val">$${(totalOut / Math.max(txnCount, 1)).toFixed(0)}</div>
+        <div class="dd-stat-sub">debit size</div>
+      </div>
+    </div>` : ''}
+
+    ${topCats.length > 0 ? `
+    <div class="dd-section">
+      <div class="dd-section-head">Where it goes</div>
+      <div class="dd-cats">
+        ${topCats.map(([cat, amt]) => `
+          <div class="dd-cat-row" onclick="event.stopPropagation(); openDrilldown('mover', '${esc(cat)}')">
+            <div class="dd-cat-main">
+              <div class="dd-cat-name">${esc(cat)}</div>
+              <div class="dd-cat-meta">${Math.round((amt / totalOut) * 100)}% of debits</div>
+            </div>
+            <div class="dd-cat-amt">
+              <div class="dd-cat-spent">$${amt.toFixed(2)}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    ${txns.length > 0 ? `
+    <div class="dd-section">
+      <div class="dd-section-head">All ${txns.length} debit transaction${txns.length === 1 ? '' : 's'}</div>
+      <div class="dd-txns">
+        ${txns.slice(0, 50).map(t => {
+          const d = new Date(t.date + 'T12:00:00');
+          return `
+            <div class="dd-txn" onclick="event.stopPropagation(); openDrilldown('txn', '${esc(t.date)}|${esc(t.merchant)}|${t.amount}')">
+              <div class="dd-txn-date">${monthShort[d.getMonth()]} ${d.getDate()}</div>
+              <div class="dd-txn-main">
+                <div class="dd-txn-merch">${esc(t.merchant)}</div>
+                <div class="dd-txn-cat">${esc(t.category)}</div>
+              </div>
+              <div class="dd-txn-amts">
+                <div class="dd-txn-amt">$${t.amount.toFixed(2)}</div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>` : ''}
+
+    ${isSavings ? `
+    <div class="dd-section">
+      <div class="dd-section-head">About</div>
+      <div class="dd-explainer">
+        Your savings balance is updated whenever your bank sends a statement or balance email. To get more frequent updates, forward me your latest savings alert and we'll wire up automatic parsing.
+      </div>
+    </div>` : ''}
+
+    ${txns.length === 0 && isChecking ? `
+    <div class="dd-section">
+      <div class="dd-section-head">Setup needed</div>
+      <div class="dd-explainer">
+        Your Chase checking balance is showing, but no debit transactions yet. Forward me a Chase debit alert email (e.g. "Payment posted to your account" or "Debit transaction") and we'll add a parser.
+      </div>
+    </div>` : ''}
+  `;
+}
+
+// Trend metric toggle state
+let TREND_METRIC = 'total';
+
+function setTrendMetric(metric) {
+  TREND_METRIC = metric;
+  document.querySelectorAll('.th-tog').forEach(t =>
+    t.classList.toggle('active', t.dataset.metric === metric));
+  renderTrendHero();
+}
+
+function renderTrendHero() {
+  const months = DATA.mom;
+  if (months.length === 0) return;
+
+  const wrap = document.getElementById('trend-hero-chart');
+  const win = document.getElementById('trends-window');
+  win.textContent = `${months.length} ${months.length === 1 ? 'month' : 'months'}`;
+
+  const last = months[months.length - 1];
+  const prev = months[months.length - 2];
+  const lastVal = last.total || 0;
+  const prevVal = prev ? prev.total || 0 : 0;
+  const delta = prevVal > 0 ? ((lastVal - prevVal) / prevVal) * 100 : 0;
+  const avg = months.reduce((a, m) => a + (m.total || 0), 0) / months.length;
+
+  // Header values
+  document.getElementById('thv-amt').textContent = '$' + Math.round(lastVal).toLocaleString();
+
+  const pill = document.getElementById('thv-pill');
+  if (prev && Math.abs(delta) > 0.5) {
+    pill.textContent = (delta >= 0 ? '↑ ' : '↓ ') + Math.abs(Math.round(delta)) + '% vs ' + prev.month;
+    pill.className = 'thv-pill ' + (delta > 0 ? 'up' : 'down');
+  } else {
+    pill.textContent = last.month;
+    pill.className = 'thv-pill';
+  }
+
+  // Sub-meta
+  const vsAvg = avg > 0 ? ((lastVal - avg) / avg) * 100 : 0;
+  document.getElementById('thv-meta').textContent =
+    `${months.length}-month avg $${Math.round(avg).toLocaleString()} · ${vsAvg >= 0 ? '+' : ''}${Math.round(vsAvg)}% this month`;
+
+  // Build the chart
+  const w = 600, h = 140, padX = 4, padY = 14;
+  const usableW = w - padX*2;
+  const usableH = h - padY*2;
+  const N = months.length;
+
+  let valueFn;
+  if (TREND_METRIC === 'budget') {
+    valueFn = m => (m.total && m.budget) ? (m.total / m.budget) * 100 : 0;
+  } else {
+    valueFn = m => m.total || 0;
+  }
+
+  const values = months.map(valueFn);
+  const max = Math.max(...values, 1);
+  const min = TREND_METRIC === 'budget' ? 0 : Math.min(...values);
+  const range = max - min || 1;
+
+  const xAt = i => padX + (N === 1 ? usableW/2 : (i / (N - 1)) * usableW);
+  const yAt = v => padY + usableH - ((v - min) / range) * usableH;
+
+  // Construct path
+  const points = values.map((v, i) => `${xAt(i)},${yAt(v)}`);
+  const linePath = `M ${points.join(' L ')}`;
+  // Smooth-ish via simple Catmull-Rom-like — use plain L for clarity
+  const areaPath = `${linePath} L ${xAt(N-1)},${yAt(min)} L ${xAt(0)},${yAt(min)} Z`;
+
+  // Avg horizontal line (only for total mode)
+  let avgLine = '';
+  if (TREND_METRIC === 'total') {
+    const avgY = yAt(avg);
+    avgLine = `<line x1="${padX}" y1="${avgY}" x2="${padX + usableW}" y2="${avgY}" stroke="var(--fg-4)" stroke-width="1" stroke-dasharray="2,3"/>
+      <text x="${padX + usableW - 4}" y="${avgY - 4}" text-anchor="end" font-size="9" fill="var(--fg-3)" font-family="JetBrains Mono">avg</text>`;
+  }
+  if (TREND_METRIC === 'budget') {
+    // 100% line
+    const budY = yAt(100);
+    avgLine = `<line x1="${padX}" y1="${budY}" x2="${padX + usableW}" y2="${budY}" stroke="var(--accent)" stroke-width="1" stroke-dasharray="2,3" opacity="0.6"/>
+      <text x="${padX + usableW - 4}" y="${budY - 4}" text-anchor="end" font-size="9" fill="var(--accent)" font-family="JetBrains Mono">budget</text>`;
+  }
+
+  // Dot markers + month labels
+  const markers = values.map((v, i) => {
+    const isLast = i === N - 1;
+    return `<circle cx="${xAt(i)}" cy="${yAt(v)}" r="${isLast ? 4 : 3}" fill="${isLast ? 'var(--accent)' : 'var(--fg)'}" stroke="var(--bg-3)" stroke-width="2"/>`;
+  }).join('');
+
+  const labels = months.map((m, i) => {
+    if (N > 8 && i % 2 !== 0 && i !== N - 1) return '';
+    return `<text x="${xAt(i)}" y="${h - 1}" text-anchor="middle" font-size="9" fill="var(--fg-3)" font-family="JetBrains Mono">${esc(m.month)}</text>`;
+  }).join('');
+
+  // Tappable invisible rect per month for drill-down to month
+  const taps = months.map((m, i) => {
+    const cx = xAt(i);
+    const halfW = N > 1 ? usableW / (N - 1) / 2 : usableW / 2;
+    return `<rect x="${cx - halfW}" y="${padY - 6}" width="${halfW * 2}" height="${usableH + 12}" fill="transparent" style="cursor:pointer" onclick="openDrilldown('month', '${esc(m.month)}')"/>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--fg)" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="var(--fg)" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="${areaPath}" fill="url(#trendGrad)"/>
+      ${avgLine}
+      <path d="${linePath}" fill="none" stroke="var(--fg)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      ${markers}
+      ${labels}
+      ${taps}
+    </svg>
+  `;
+}
+
+function renderInsights() {
+  const wrap = document.getElementById('trend-insights');
+  const months = DATA.mom;
+  if (months.length < 2) {
+    wrap.innerHTML = '<div class="empty">Need at least 2 months for insights</div>';
+    return;
+  }
+
+  const insights = [];
+  const last = months[months.length - 1];
+  const prev = months[months.length - 2];
+  const buckets = [
+    { key: 'housing', name: 'Housing' },
+    { key: 'food', name: 'Food' },
+    { key: 'transport', name: 'Transportation' },
+    { key: 'lifestyle', name: 'Lifestyle' },
+    { key: 'subscriptions', name: 'Subscriptions' },
+  ];
+
+  // 1. Biggest bucket increase MoM
+  let topGrowth = null;
+  buckets.forEach(b => {
+    const cur = last[b.key] || 0;
+    const old = prev[b.key] || 0;
+    if (old > 20 && cur > old) {
+      const dollars = cur - old;
+      const pct = (dollars / old) * 100;
+      if (pct > 15 && (!topGrowth || pct > topGrowth.pct)) {
+        topGrowth = { ...b, dollars, pct };
+      }
+    }
+  });
+  if (topGrowth) {
+    insights.push({
+      type: 'up',
+      icon: '<svg viewBox="0 0 24 24"><path d="M7 17l9-9M9 7h7v7"/></svg>',
+      title: `${topGrowth.name} jumped ${Math.round(topGrowth.pct)}% vs ${prev.month}`,
+      sub: `+$${Math.round(topGrowth.dollars).toLocaleString()} more this month`,
+      amt: '+$' + Math.round(topGrowth.dollars).toLocaleString(),
+      amtClass: 'up',
+      action: () => openDrilldown('bucket', topGrowth.name),
+    });
+  }
+
+  // 2. Biggest bucket decrease MoM
+  let topShrink = null;
+  buckets.forEach(b => {
+    const cur = last[b.key] || 0;
+    const old = prev[b.key] || 0;
+    if (old > 20 && cur < old) {
+      const dollars = old - cur;
+      const pct = (dollars / old) * 100;
+      if (pct > 15 && (!topShrink || pct > topShrink.pct)) {
+        topShrink = { ...b, dollars, pct };
+      }
+    }
+  });
+  if (topShrink) {
+    insights.push({
+      type: 'down',
+      icon: '<svg viewBox="0 0 24 24"><path d="M7 7l9 9M9 17h7v-7"/></svg>',
+      title: `${topShrink.name} dropped ${Math.round(topShrink.pct)}% vs ${prev.month}`,
+      sub: `Saved $${Math.round(topShrink.dollars).toLocaleString()} this month`,
+      amt: '-$' + Math.round(topShrink.dollars).toLocaleString(),
+      amtClass: 'down',
+      action: () => openDrilldown('bucket', topShrink.name),
+    });
+  }
+
+  // 3. Streak — consecutive months trending up or down
+  const totals = months.map(m => m.total || 0);
+  let streak = 1;
+  let streakDir = totals[totals.length - 1] > totals[totals.length - 2] ? 'up' : 'down';
+  for (let i = totals.length - 2; i >= 1; i--) {
+    const isUp = totals[i] > totals[i - 1];
+    const dir = isUp ? 'up' : 'down';
+    if (dir !== streakDir) break;
+    streak++;
+  }
+  if (streak >= 3) {
+    insights.push({
+      type: streakDir,
+      icon: streakDir === 'up'
+        ? '<svg viewBox="0 0 24 24"><path d="M2 18l6-6 4 4 8-10"/></svg>'
+        : '<svg viewBox="0 0 24 24"><path d="M2 6l6 6 4-4 8 10"/></svg>',
+      title: `${streak} months ${streakDir === 'up' ? 'trending up' : 'in decline'}`,
+      sub: `Spending has ${streakDir === 'up' ? 'grown' : 'fallen'} every month for ${streak} consecutive months`,
+      amt: streak + 'mo',
+      amtClass: streakDir,
+    });
+  }
+
+  // 4. Anomaly — month that's 2+ standard deviations from average
+  const avg = totals.reduce((a, b) => a + b, 0) / totals.length;
+  const variance = totals.reduce((a, v) => a + Math.pow(v - avg, 2), 0) / totals.length;
+  const stdev = Math.sqrt(variance);
+  if (stdev > 0) {
+    const lastZ = (totals[totals.length - 1] - avg) / stdev;
+    if (Math.abs(lastZ) > 1.3) {
+      insights.push({
+        type: lastZ > 0 ? 'up' : 'down',
+        icon: '<svg viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>',
+        title: lastZ > 0 ? 'This month is unusually high' : 'This month is unusually low',
+        sub: `${Math.abs(Math.round(((totals[totals.length - 1] - avg) / avg) * 100))}% ${lastZ > 0 ? 'above' : 'below'} your typical spend`,
+        amt: (lastZ > 0 ? '+' : '') + (((totals[totals.length - 1] - avg) / avg) * 100).toFixed(0) + '%',
+        amtClass: lastZ > 0 ? 'up' : 'down',
+        action: () => openDrilldown('month', last.month),
+      });
+    }
+  }
+
+  // 5. Best/worst category vs budget this month — over-budget warning
+  const overCats = DATA.cats.filter(c => c.budget > 0 && c.spent > c.budget * 1.1);
+  if (overCats.length > 0) {
+    const worst = overCats.sort((a, b) => (b.spent / b.budget) - (a.spent / a.budget))[0];
+    const overPct = ((worst.spent / worst.budget) - 1) * 100;
+    insights.push({
+      type: 'up',
+      icon: '<svg viewBox="0 0 24 24"><path d="M12 2v6M12 14h.01M3 12c0-5 4-9 9-9s9 4 9 9-4 9-9 9-9-4-9-9z"/></svg>',
+      title: `${worst.category} is ${Math.round(overPct)}% over budget`,
+      sub: `Spent $${Math.round(worst.spent)} of $${Math.round(worst.budget)} budget`,
+      amt: '+$' + Math.round(worst.spent - worst.budget),
+      amtClass: 'up',
+      action: () => openDrilldown('mover', worst.category),
+    });
+  }
+
+  if (insights.length === 0) {
+    wrap.innerHTML = '<div class="empty">Spending looks steady — no big movers this month</div>';
+    return;
+  }
+
+  // Stash actions in closure scope
+  window._insightActions = insights.map(i => i.action || null);
+
+  wrap.innerHTML = insights.slice(0, 5).map((ins, idx) => `
+    <div class="insight reveal" style="animation-delay:${idx*30}ms" onclick="(window._insightActions[${idx}] || (()=>{}))()">
+      <div class="insight-icon ${ins.type}">${ins.icon}</div>
+      <div class="insight-body">
+        <div class="insight-title">${esc(ins.title)}</div>
+        <div class="insight-sub">${esc(ins.sub)}</div>
+      </div>
+      <div class="insight-amt ${ins.amtClass}">${esc(ins.amt)}</div>
+    </div>
+  `).join('');
+}
+
+function renderTrendRows() {
+  const wrap = document.getElementById('trend-rows');
+  const months = DATA.mom;
+  if (months.length === 0) { wrap.innerHTML = ''; return; }
+
+  const buckets = [
+    { key: 'housing', name: 'Housing' },
+    { key: 'food', name: 'Food' },
+    { key: 'transport', name: 'Transportation' },
+    { key: 'lifestyle', name: 'Lifestyle' },
+    { key: 'subscriptions', name: 'Subscriptions' },
+  ];
+
+  wrap.innerHTML = buckets.map((b, idx) => {
+    const values = months.map(m => m[b.key] || 0);
+    const last = values[values.length - 1];
+    const prev = values[values.length - 2] || 0;
+    const delta = prev > 0 ? ((last - prev) / prev) * 100 : 0;
+    const avg = values.reduce((a, v) => a + v, 0) / values.length;
+    return `
+      <div class="trow reveal" style="animation-delay:${idx*30}ms" onclick="openDrilldown('trend', '${b.key}')">
+        <div class="trow-info">
+          <div class="trow-name">${esc(b.name)}</div>
+          <div class="trow-meta">avg $${Math.round(avg).toLocaleString()} · ${months.length}mo</div>
+        </div>
+        <div class="trow-spark">${sparkline(values, 100, 36, last >= avg)}</div>
+        <div class="trow-amt">
+          <div class="now">$${Math.round(last).toLocaleString()}</div>
+          ${prev > 0 ? `<div class="delta ${delta > 0 ? 'up' : (delta < 0 ? 'down' : '')}">${delta >= 0 ? '↑' : '↓'} ${Math.abs(Math.round(delta))}%</div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderTrendCats() {
+  const wrap = document.getElementById('trend-cats');
+  const months = DATA.mom;
+
+  // Top 6 categories by current month spend
+  const topCats = [...DATA.cats]
+    .filter(c => c.spent > 0)
+    .sort((a, b) => b.spent - a.spent)
+    .slice(0, 6);
+
+  if (topCats.length === 0) { wrap.innerHTML = ''; return; }
+
+  // For per-category history, we approximate using bucket-level history weighted
+  // by current month's category share within the bucket. (Real per-category history
+  // would require monthly snapshots of each category — not in our schema yet.)
+  // Better fallback: just show a single-point sparkline (current month dot).
+  // For now, scale bucket history by category's share within bucket.
+  wrap.innerHTML = topCats.map((c, idx) => {
+    const bucketTotal = DATA.cats
+      .filter(x => x.bucket === c.bucket)
+      .reduce((a, x) => a + x.spent, 0);
+    const share = bucketTotal > 0 ? c.spent / bucketTotal : 1;
+    const bucketKey = (c.bucket || '').toLowerCase()
+      .replace('transportation', 'transport');
+    const bucketHistory = months.map(m => (m[bucketKey] || 0) * share);
+
+    const last = bucketHistory[bucketHistory.length - 1] || c.spent;
+    const prev = bucketHistory[bucketHistory.length - 2] || 0;
+    const delta = prev > 0 ? ((last - prev) / prev) * 100 : 0;
+    const avg = bucketHistory.length > 0
+      ? bucketHistory.reduce((a, v) => a + v, 0) / bucketHistory.length
+      : c.spent;
+
+    return `
+      <div class="trow reveal" style="animation-delay:${idx*30}ms" onclick="openDrilldown('mover', '${esc(c.category)}')">
+        <div class="trow-info">
+          <div class="trow-name">${esc(c.category)}</div>
+          <div class="trow-meta">${esc(c.bucket || '')} · est avg $${Math.round(avg).toLocaleString()}</div>
+        </div>
+        <div class="trow-spark">${sparkline(bucketHistory, 100, 36, c.spent > avg)}</div>
+        <div class="trow-amt">
+          <div class="now">$${Math.round(c.spent).toLocaleString()}</div>
+          ${prev > 0 ? `<div class="delta ${delta > 0 ? 'up' : (delta < 0 ? 'down' : '')}">${delta >= 0 ? '↑' : '↓'} ${Math.abs(Math.round(delta))}%</div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// Reusable sparkline SVG helper
+function sparkline(values, w, h, accent) {
+  if (!values || values.length === 0) return '';
+  const max = Math.max(...values, 1);
+  const min = Math.min(...values, 0);
+  const range = max - min || 1;
+  const N = values.length;
+  const padY = 3;
+  const usableH = h - padY*2;
+  const xAt = i => N === 1 ? w/2 : (i / (N - 1)) * w;
+  const yAt = v => padY + usableH - ((v - min) / range) * usableH;
+  const points = values.map((v, i) => `${xAt(i)},${yAt(v)}`);
+  const linePath = `M ${points.join(' L ')}`;
+  const areaPath = `${linePath} L ${xAt(N-1)},${h} L ${xAt(0)},${h} Z`;
+  const stroke = accent ? 'var(--accent)' : 'var(--fg-2)';
+  const lastDot = `<circle cx="${xAt(N-1)}" cy="${yAt(values[N-1])}" r="2.5" fill="${stroke}"/>`;
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <path d="${areaPath}" fill="${stroke}" opacity="0.12"/>
+    <path d="${linePath}" fill="none" stroke="${stroke}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${lastDot}
+  </svg>`;
+}
+
+function renderTrends() {
+  const months = DATA.mom;
+  if (months.length === 0) {
+    document.getElementById('trend-hero-chart').innerHTML = '';
+    document.getElementById('trend-insights').innerHTML = '<div class="empty">No history yet</div>';
+    document.getElementById('trend-rows').innerHTML = '';
+    document.getElementById('trend-cats').innerHTML = '';
+    return;
+  }
+  renderTrendHero();
+  renderInsights();
+  renderTrendRows();
+  renderTrendCats();
+}
+
+function renderActivity() {
+  const list = document.getElementById('activity-list');
+  const txns = [...DATA.recent].sort((a, b) => b.date.localeCompare(a.date));
+  document.getElementById('activity-meta').textContent = `Last ${txns.length}`;
+
+  if (txns.length === 0) {
+    list.innerHTML = '<div class="empty">No transactions yet</div>';
+    return;
+  }
+
+  const groups = {};
+  txns.forEach(t => {
+    if (!groups[t.date]) groups[t.date] = [];
+    groups[t.date].push(t);
+  });
+
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const monthShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  list.innerHTML = Object.entries(groups).map(([date, items], idx) => {
+    const dateObj = new Date(date + 'T12:00:00');
+    const dayName = days[dateObj.getDay()];
+    const dayLabel = `${monthShort[dateObj.getMonth()]} ${dateObj.getDate()}`;
+    const total = items.reduce((a, t) => a + t.amount, 0);
+
+    const txnsHtml = items.map(t => `
+      <div class="txn" onclick="openDrilldown('txn', '${esc(t.date)}|${esc(t.merchant)}|${t.amount}')">
+        <div class="txn-merchant">${esc(t.merchant)}</div>
+        <div class="txn-amt">$${t.amount.toFixed(2)}</div>
+        <div class="txn-meta">
+          <span>${esc(t.category)}</span>
+          <span class="sep"></span>
+          <span class="card-tag">${esc(t.card)}</span>
+        </div>
+      </div>
+    `).join('');
+
+    return `
+      <div class="day-group reveal" style="animation-delay:${Math.min(idx*30, 240)}ms">
+        <div class="day-head" onclick="openDrilldown('day', '${esc(date)}')">
+          <div class="day-date">${dayLabel}<span class="day-name">${dayName}</span></div>
+          <div class="day-total">$${total.toFixed(2)}</div>
+        </div>
+        <div class="day-txns">${txnsHtml}</div>
+      </div>`;
+  }).join('');
+}
+
+function showScreen(name) {
+  // Stop any briefing audio when switching screens
+  if (BRIEFING_STATE.playing) stopBriefing();
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.screen === name));
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+// ===========================================
+// BRIEFING — voice-narrated spending summary
+// ===========================================
+const BRIEFING_STATE = {
+  scope: 'week',     // 'day' | 'week' | 'month'
+  playing: false,
+  utterance: null,
+  script: '',
+  scriptWords: [],
+  startTime: 0,
+  estDuration: 0,
+};
+
+function renderBriefing() {
+  const meta = document.getElementById('briefing-time');
+  if (!meta) return;
+  const now = new Date();
+  const hr = now.getHours();
+  const greeting = hr < 12 ? 'GOOD MORNING' : hr < 18 ? 'GOOD AFTERNOON' : 'GOOD EVENING';
+  meta.textContent = greeting;
+
+  // Pre-build the script + show controls if voices are available
+  const script = buildBriefingScript(BRIEFING_STATE.scope);
+  BRIEFING_STATE.script = script;
+  // Roughly 2.7 words per second for a natural pace
+  const wordCount = script.split(/\s+/).length;
+  BRIEFING_STATE.estDuration = Math.max(15, Math.round(wordCount / 2.7));
+
+  document.getElementById('briefing-status').textContent = `~${BRIEFING_STATE.estDuration}s · tap play`;
+
+  // Show controls (scope chips) and script preview
+  document.getElementById('briefing-controls').style.display = 'flex';
+  const scriptEl = document.getElementById('briefing-script');
+  scriptEl.innerHTML = renderBriefingScriptHTML(script);
+}
+
+function setBriefingScope(scope) {
+  if (BRIEFING_STATE.playing) stopBriefing();
+  BRIEFING_STATE.scope = scope;
+  document.querySelectorAll('.briefing-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.scope === scope);
+  });
+  renderBriefing();
+}
+
+function renderBriefingScriptHTML(script) {
+  // Split into words for word-level highlighting
+  const words = script.split(/(\s+)/);
+  return words.map((w, i) => {
+    if (/^\s+$/.test(w)) return w;
+    return `<span class="word" data-i="${i}">${esc(w)}</span>`;
+  }).join('');
+}
+
+function buildBriefingScript(scope) {
+  if (!DATA || !DATA.cats || DATA.cats.length === 0) {
+    return "Hi Vishnu. I don't have any spending data yet. Once your transactions sync, I'll have a real summary for you.";
+  }
+
+  const now = new Date();
+  const hr = now.getHours();
+  const greeting = hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening';
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const monthName = monthNames[now.getMonth()];
+  const day = now.getDate();
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const daysLeft = lastDay - day;
+
+  if (scope === 'day') return buildDayBriefing(now, dayNames, monthNames, greeting);
+  if (scope === 'week') return buildWeekBriefing(now, dayNames, monthNames, greeting);
+  return buildMonthBriefing(now, monthNames, greeting, monthName, day, lastDay, daysLeft);
+}
+
+function buildDayBriefing(now, dayNames, monthNames, greeting) {
+  // Find today's transactions (or yesterday if today is empty)
+  const todayStr = now.toISOString().slice(0, 10);
+  let txns = DATA.recent.filter(t => t.date === todayStr);
+  let dayLabel = 'today';
+  let dayPhrase = 'so far today';
+
+  if (txns.length === 0) {
+    const yest = new Date(now); yest.setDate(yest.getDate() - 1);
+    const yestStr = yest.toISOString().slice(0, 10);
+    txns = DATA.recent.filter(t => t.date === yestStr);
+    dayLabel = 'yesterday';
+    dayPhrase = 'yesterday';
+  }
+
+  if (txns.length === 0) {
+    const sortedDates = [...new Set(DATA.recent.map(t => t.date))].sort().reverse();
+    if (sortedDates.length > 0) {
+      const recent = sortedDates[0];
+      txns = DATA.recent.filter(t => t.date === recent);
+      const d = new Date(recent + 'T12:00:00');
+      dayLabel = `on ${dayNames[d.getDay()]}`;
+      dayPhrase = `on ${dayNames[d.getDay()]}`;
+    }
+  }
+
+  if (txns.length === 0) {
+    return `${greeting}, Vishnu. Quiet on the spending front — nothing's come through yet.`;
+  }
+
+  const total = txns.reduce((a, t) => a + t.amount, 0);
+  const sorted = [...txns].sort((a, b) => b.amount - a.amount);
+  const top = sorted[0];
+  const second = sorted[1];
+
+  // Category breakdown
+  const byCat = {};
+  txns.forEach(t => { byCat[t.category] = (byCat[t.category] || 0) + t.amount; });
+  const topCat = Object.entries(byCat).sort((a, b) => b[1] - a[1])[0];
+
+  // Reward analysis
+  let missedTotal = 0;
+  let missedDetail = null;
+  txns.forEach(t => {
+    const r = rewardRate(t.card, t.category);
+    const opt = optimalCardFor(t.category);
+    if (opt.rate > r) {
+      const m = t.amount * (opt.rate - r) / 100;
+      missedTotal += m;
+      if (!missedDetail || m > missedDetail.missed) {
+        missedDetail = { txn: t, missed: m, optCard: opt.card, optRate: opt.rate, actualRate: r };
+      }
+    }
+  });
+
+  // Build natural sentences
+  let s = `${greeting}, Vishnu. `;
+
+  // Lead with the big picture, vary based on size
+  if (total < 30) {
+    s += `Light day ${dayPhrase}, ${money(total)} total across ${txns.length === 1 ? 'one charge' : `${txns.length} charges`}. `;
+  } else if (total < 100) {
+    s += `Moderate spending ${dayPhrase} — ${money(total)} across ${txns.length} ${txns.length === 1 ? 'transaction' : 'transactions'}. `;
+  } else if (total < 300) {
+    s += `Solid spending ${dayPhrase}, ${money(total)} on ${txns.length} ${txns.length === 1 ? 'charge' : 'charges'}. `;
+  } else {
+    s += `Big day ${dayPhrase}. You moved ${money(total)} through ${txns.length} ${txns.length === 1 ? 'transaction' : 'transactions'}. `;
+  }
+
+  // Highlight the top transaction conversationally
+  if (top && top.amount > 5 && top.amount > total * 0.2) {
+    s += `The standout was ${money(top.amount)} at ${cleanMerchantName(top.merchant)}`;
+    if (second && second.amount > total * 0.15) {
+      s += `, followed by ${money(second.amount)} at ${cleanMerchantName(second.merchant)}`;
+    }
+    s += `. `;
+  }
+
+  // Category framing if it's interesting
+  if (topCat && topCat[1] > total * 0.4 && txns.length >= 2) {
+    s += `Most of it went to ${pronounceCategory(topCat[0])}. `;
+  }
+
+  // Reward callout — be specific and actionable
+  if (missedTotal > 1) {
+    const detail = missedDetail;
+    s += `Quick heads up though: you left about ${money(missedTotal)} of rewards on the table. `;
+    if (detail && detail.missed > 0.5) {
+      const optIssuer = CARDS[detail.optCard]?.issuer || detail.optCard;
+      s += `For example, that ${cleanMerchantName(detail.txn.merchant)} charge would've earned more on your ${optIssuer} card. `;
+    }
+  } else if (missedTotal > 0.25) {
+    s += `Card choices were mostly optimal — only ${money(missedTotal)} of rewards left on the table. `;
+  } else if (txns.length >= 2) {
+    s += `And nice work on the cards — every charge went on the right one. `;
+  }
+
+  return s.trim();
+}
+
+function buildWeekBriefing(now, dayNames, monthNames, greeting) {
+  const start = new Date(now); start.setDate(start.getDate() - 6);
+  const startStr = start.toISOString().slice(0, 10);
+  const todayStr = now.toISOString().slice(0, 10);
+  const txns = DATA.recent.filter(t => t.date >= startStr && t.date <= todayStr);
+
+  if (txns.length === 0) {
+    return `${greeting}, Vishnu. The week's been quiet on spending — nothing's come through. Either you're being disciplined or the parser hasn't caught up yet.`;
+  }
+
+  const total = txns.reduce((a, t) => a + t.amount, 0);
+  const dayCount = new Set(txns.map(t => t.date)).size;
+  const dailyAvg = total / 7;
+
+  // Categories
+  const byCat = {};
+  txns.forEach(t => { byCat[t.category] = (byCat[t.category] || 0) + t.amount; });
+  const topCats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+
+  // Merchants
+  const byMerch = {};
+  const merchVisits = {};
+  txns.forEach(t => {
+    byMerch[t.merchant] = (byMerch[t.merchant] || 0) + t.amount;
+    merchVisits[t.merchant] = (merchVisits[t.merchant] || 0) + 1;
+  });
+  const topMerch = Object.entries(byMerch).sort((a, b) => b[1] - a[1])[0];
+
+  // Heaviest day
+  const byDay = {};
+  txns.forEach(t => { byDay[t.date] = (byDay[t.date] || 0) + t.amount; });
+  const topDay = Object.entries(byDay).sort((a, b) => b[1] - a[1])[0];
+  const topDayDate = topDay ? new Date(topDay[0] + 'T12:00:00') : null;
+
+  // Rewards
+  let earned = 0, missed = 0;
+  let missedByCard = {};
+  txns.forEach(t => {
+    const r = rewardRate(t.card, t.category);
+    const opt = optimalCardFor(t.category);
+    earned += t.amount * r / 100;
+    if (opt.rate > r) {
+      const m = t.amount * (opt.rate - r) / 100;
+      missed += m;
+      missedByCard[t.card] = (missedByCard[t.card] || 0) + m;
+    }
+  });
+
+  // Compare to prior week
+  const priorStart = new Date(now); priorStart.setDate(priorStart.getDate() - 13);
+  const priorEnd = new Date(now); priorEnd.setDate(priorEnd.getDate() - 7);
+  const priorTxns = DATA.recent.filter(t =>
+    t.date >= priorStart.toISOString().slice(0,10) &&
+    t.date <= priorEnd.toISOString().slice(0,10)
+  );
+  const priorTotal = priorTxns.reduce((a, t) => a + t.amount, 0);
+  const wowChange = priorTotal > 0 ? ((total - priorTotal) / priorTotal) * 100 : 0;
+
+  // Open with personality
+  let s = `${greeting}, Vishnu. Here's how the past seven days played out. `;
+
+  // Hook: the headline number with context
+  if (priorTotal > 50 && Math.abs(wowChange) > 12) {
+    if (wowChange > 0) {
+      s += `You spent ${money(total)} this week, which is about ${Math.abs(Math.round(wowChange))}% more than last week. `;
+    } else {
+      s += `You spent ${money(total)} this week, which is around ${Math.abs(Math.round(wowChange))}% lighter than last week. `;
+    }
+  } else if (priorTotal > 0) {
+    s += `You spent ${money(total)} this week, roughly flat with last week. `;
+  } else {
+    s += `You spent ${money(total)} this week, averaging ${money(dailyAvg)} per day. `;
+  }
+
+  // Where it went — narrative not just a list
+  if (topCats[0]) {
+    const topName = pronounceCategory(topCats[0][0]);
+    const topAmt = topCats[0][1];
+    const pctOfTotal = total > 0 ? Math.round((topAmt / total) * 100) : 0;
+
+    if (pctOfTotal > 50) {
+      s += `The bulk of it, more than half, was ${topName} — ${money(topAmt)}. `;
+    } else if (pctOfTotal > 30) {
+      s += `${topName.charAt(0).toUpperCase() + topName.slice(1)} led the way at ${money(topAmt)}. `;
+    } else {
+      s += `Spending was spread out, but ${topName} edged ahead at ${money(topAmt)}. `;
+    }
+
+    if (topCats[1] && topCats[1][1] > total * 0.1) {
+      s += `${pronounceCategory(topCats[1][0]).charAt(0).toUpperCase() + pronounceCategory(topCats[1][0]).slice(1)} came in second at ${money(topCats[1][1])}. `;
+    }
+  }
+
+  // The merchant hook — only if it's interesting
+  if (topMerch && topMerch[1] > 30 && merchVisits[topMerch[0]] >= 2) {
+    s += `You hit ${cleanMerchantName(topMerch[0])} ${merchVisits[topMerch[0]]} times — ${money(topMerch[1])} total. `;
+  } else if (topMerch && topMerch[1] > total * 0.25) {
+    s += `Biggest single hit at one place: ${money(topMerch[1])} at ${cleanMerchantName(topMerch[0])}. `;
+  }
+
+  // Heaviest day color
+  if (topDay && topDayDate && topDay[1] > total * 0.35 && total > 100) {
+    s += `${dayNames[topDayDate.getDay()]} did the heavy lifting at ${money(topDay[1])}. `;
+  }
+
+  // Rewards story — with narrative judgment
+  if (missed > 5) {
+    s += `On rewards, you earned about ${money(earned)}, but you left a real chunk on the table — roughly ${money(missed)} that better card choices would've captured. `;
+    const worstCard = Object.entries(missedByCard).sort((a, b) => b[1] - a[1])[0];
+    if (worstCard && worstCard[1] > 2) {
+      const cardName = CARDS[worstCard[0]]?.issuer || worstCard[0];
+      s += `Most of that came from ${cardName} purchases that should've gone elsewhere. `;
+    }
+    s += `Worth a peek at the cards tab. `;
+  } else if (missed > 1) {
+    s += `Rewards-wise, you earned ${money(earned)}, with maybe ${money(missed)} of small misses. Nothing major. `;
+  } else {
+    s += `On rewards, you played it perfect — ${money(earned)} earned with no real misses. `;
+  }
+
+  // Pacing wrap-up — be a real friend, not a robot
+  const totalBudget = DATA.cats.reduce((a, c) => a + c.budget, 0);
+  if (totalBudget > 0) {
+    const expectedWeekly = totalBudget * (7 / 30);
+    const ratio = total / expectedWeekly;
+    if (ratio > 1.25) {
+      s += `One concern — this week was about ${Math.round((ratio - 1) * 100)}% over your typical weekly pace. If next week looks similar, you'll blow through the monthly budget. `;
+    } else if (ratio > 1.10) {
+      s += `Just slightly above pace. Worth keeping an eye on if it continues. `;
+    } else if (ratio < 0.75) {
+      s += `Tracking well below pace — solid discipline this week. `;
+    } else {
+      s += `You're right on track for the month. `;
+    }
+  }
+
+  // Close with warmth
+  const closings = [
+    `Hope the week was a good one.`,
+    `Have a great rest of your weekend.`,
+    `Talk soon.`,
+    `That's the recap.`,
+  ];
+  const dow = now.getDay();
+  if (dow === 0 || dow === 6) s += closings[1];
+  else if (dow === 5) s += closings[0];
+  else s += closings[3];
+
+  return s.trim();
+}
+
+function buildMonthBriefing(now, monthNames, greeting, monthName, day, lastDay, daysLeft) {
+  const totalSpent = DATA.cats.reduce((a, c) => a + c.spent, 0);
+  const totalBudget = DATA.cats.reduce((a, c) => a + c.budget, 0);
+  const dailyPace = day > 0 ? totalSpent / day : 0;
+  const projected = dailyPace * lastDay;
+  const overUnder = projected - totalBudget;
+
+  const topCats = [...DATA.cats]
+    .filter(c => c.spent > 0)
+    .sort((a, b) => b.spent - a.spent)
+    .slice(0, 3);
+
+  // Categories over budget
+  const overCats = DATA.cats.filter(c => c.budget > 0 && c.spent > c.budget);
+
+  const lastMonth = DATA.mom[DATA.mom.length - 2];
+
+  let s = `${greeting}, Vishnu. Let's talk about ${monthName}. `;
+
+  // Stage of the month context
+  const stagePct = day / lastDay;
+  let stage = '';
+  if (stagePct < 0.25) stage = 'Just getting started';
+  else if (stagePct < 0.5) stage = 'About a quarter through';
+  else if (stagePct < 0.75) stage = 'Past the halfway point';
+  else if (stagePct < 0.9) stage = 'Coming down the home stretch';
+  else stage = 'Wrapping up';
+
+  s += `${stage} — day ${day} of ${lastDay}, with ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} to go. `;
+
+  // The current state
+  s += `You've spent ${money(totalSpent)} so far`;
+  if (totalBudget > 0) {
+    s += `, against a budget of ${money(totalBudget)}`;
+  }
+  s += `. `;
+
+  // The trajectory — this is the most important framing
+  if (totalBudget > 0) {
+    const pctSpent = (totalSpent / totalBudget) * 100;
+    if (overUnder > totalBudget * 0.10) {
+      s += `At ${money(dailyPace)} per day, you're on track to finish the month around ${money(projected)}, which would be roughly ${money(overUnder)} over budget. That's a meaningful overrun, so this is the moment to start pulling back. `;
+    } else if (overUnder > 0) {
+      s += `At ${money(dailyPace)} per day, you'll land near ${money(projected)} — about ${money(overUnder)} over budget. Tight, but recoverable if you ease up a bit. `;
+    } else if (overUnder > -totalBudget * 0.15) {
+      s += `At ${money(dailyPace)} per day, you'll land around ${money(projected)} — right at or just under budget. Solid pacing. `;
+    } else {
+      s += `At ${money(dailyPace)} per day, you'll land around ${money(projected)} — comfortably under budget by about ${money(-overUnder)}. Real discipline this month. `;
+    }
+  } else {
+    s += `Your average daily spend is ${money(dailyPace)}, which projects to roughly ${money(projected)} by month end. `;
+  }
+
+  // Where the money's going — narrative
+  if (topCats.length > 0) {
+    const top = topCats[0];
+    const pctOfTotal = totalSpent > 0 ? (top.spent / totalSpent) * 100 : 0;
+    if (pctOfTotal > 50) {
+      s += `Your biggest line item by far is ${pronounceCategory(top.category)} at ${money(top.spent)} — that alone is more than half of everything you've spent. `;
+    } else {
+      s += `${pronounceCategory(top.category).charAt(0).toUpperCase() + pronounceCategory(top.category).slice(1)} is your top category at ${money(top.spent)}`;
+      if (topCats[1]) {
+        s += `, with ${pronounceCategory(topCats[1].category)} not far behind at ${money(topCats[1].spent)}`;
+      }
+      s += `. `;
+    }
+  }
+
+  // Over-budget warnings
+  if (overCats.length > 0) {
+    const worst = overCats.sort((a, b) => (b.spent - b.budget) - (a.spent - a.budget))[0];
+    s += `One category to watch: ${pronounceCategory(worst.category)} is already ${money(worst.spent - worst.budget)} over its ${money(worst.budget)} budget. `;
+    if (overCats.length > 1) {
+      s += `${overCats.length - 1} other ${overCats.length === 2 ? 'category is' : 'categories are'} also over. `;
+    }
+  }
+
+  // Comparison narrative
+  if (lastMonth && lastMonth.total > 0) {
+    const pctChange = ((projected - lastMonth.total) / lastMonth.total) * 100;
+    if (Math.abs(pctChange) > 12) {
+      if (pctChange > 0) {
+        s += `Compared to ${lastMonth.month}, this month's tracking about ${Math.abs(Math.round(pctChange))}% higher — worth being aware of. `;
+      } else {
+        s += `Big improvement on ${lastMonth.month} — spending's down about ${Math.abs(Math.round(pctChange))}% so far. `;
+      }
+    }
+  }
+
+  // Close with a useful frame
+  if (daysLeft > 5 && totalBudget > 0) {
+    const dailyAvail = (totalBudget - totalSpent) / daysLeft;
+    if (dailyAvail > 0) {
+      s += `If you want to hit budget, that means staying around ${money(dailyAvail)} a day for the rest of the month. `;
+    }
+  }
+  s += `Tap into any tab if you want to dig further.`;
+
+  return s.trim();
+}
+
+function cleanMerchantName(m) {
+  if (!m) return '';
+  // Strip common suffixes / clean for speech
+  return m
+    .replace(/\s*\d{3,}\s*$/, '')           // trailing numbers
+    .replace(/\s+#\d+/, '')                 // store numbers
+    .replace(/\s*\d+\.\d+\s*$/, '')         // amounts
+    .replace(/\s*[A-Z]{2}\s*$/, '')         // state codes
+    .replace(/\bDOORDASH\b/i, 'DoorDash')
+    .replace(/\bUBER EATS\b/i, 'Uber Eats')
+    .replace(/\bAPL\*/, 'Apple ')
+    .replace(/\bSQ\s*\*\s*/, '')
+    .replace(/\bTST\*/, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^./, c => c.toUpperCase());
+}
+
+function money(amt) {
+  // Format for speech: "twelve dollars and thirty four cents" not "$12.34"
+  // Actually, just say "twelve dollars" and "thirty four cents" — speech engines handle "$12" fine
+  // But $X,XXX needs comma stripping for clean reads
+  const n = Math.round(amt * 100) / 100;
+  if (n >= 1000) return '$' + Math.round(n).toLocaleString();
+  return '$' + n.toFixed(2);
+}
+
+function pronounceCategory(cat) {
+  // Tweak categories that don't read naturally
+  const map = {
+    'Dining out': 'dining out',
+    'Coffee': 'coffee',
+    'Groceries': 'groceries',
+    'Travel': 'travel',
+    'Misc Adhoc': 'miscellaneous',
+    'Tesla Car': 'the Tesla',
+    'Tesla Insurance': 'Tesla insurance',
+    'Tesla Connectivity': 'Tesla connectivity',
+    'FSD': 'F S D',
+    'PS5 Subscription': 'PlayStation Plus',
+    'Apple storage': 'Apple storage',
+    'Renters Insurance': 'renters insurance',
+    'Car charging': 'car charging',
+    'Protein shake': 'protein shakes',
+    'ChatGPT': 'Chat G P T',
+    'Claude AI': 'Claude',
+  };
+  return map[cat] || cat.toLowerCase();
+}
+
+function toggleBriefing() {
+  if (BRIEFING_STATE.playing) {
+    stopBriefing();
+  } else {
+    playBriefing();
+  }
+}
+
+function playBriefing() {
+  if (!('speechSynthesis' in window)) {
+    document.getElementById('briefing-status').textContent = 'Voice not supported on this device';
+    return;
+  }
+
+  const script = BRIEFING_STATE.script || buildBriefingScript(BRIEFING_STATE.scope);
+  if (!script) return;
+
+  // iOS sometimes returns empty voices list initially. Give it one chance to load.
+  let voices = window.speechSynthesis.getVoices();
+  if (voices.length === 0) {
+    document.getElementById('briefing-status').textContent = 'Loading voice…';
+    setTimeout(() => {
+      voices = window.speechSynthesis.getVoices();
+      _doSpeakBriefing(script, voices);
+    }, 250);
+    return;
+  }
+  _doSpeakBriefing(script, voices);
+}
+
+function _doSpeakBriefing(script, voices) {
+  // Try to pick a high-quality voice. iOS has Samantha (en-US), Daniel (en-GB)
+  let voice = null;
+  // Prefer enhanced/premium iOS voices
+  // Priority order for natural-sounding voices on iOS / macOS / Chrome
+  // iOS 17+ has 'Siri' voices that sound much more human. Try those first.
+  const preferredNames = [
+    'Ava (Premium)', 'Ava (Enhanced)', 'Ava',
+    'Allison (Premium)', 'Allison (Enhanced)', 'Allison',
+    'Samantha (Premium)', 'Samantha (Enhanced)', 'Samantha',
+    'Evan (Premium)', 'Evan',
+    'Nicky (Premium)', 'Nicky',
+    'Karen', 'Daniel', 'Moira', 'Tessa', 'Alex',
+    'Google US English'  // Chrome desktop fallback
+  ];
+  for (const name of preferredNames) {
+    voice = voices.find(v => v.name.includes(name) && v.lang.startsWith('en'));
+    if (voice) break;
+  }
+  if (!voice) {
+    voice = voices.find(v => v.lang === 'en-US' && v.localService) || voices.find(v => v.lang.startsWith('en')) || voices[0];
+  }
+
+  const u = new SpeechSynthesisUtterance(script);
+  if (voice) u.voice = voice;
+  u.rate = 0.97;     // slightly slower than default — sounds more natural and considered
+  u.pitch = 1.0;
+  u.volume = 1.0;
+
+  const scriptEl = document.getElementById('briefing-script');
+  const wordEls = scriptEl.querySelectorAll('.word');
+  const charToWord = [];
+  let charIdx = 0;
+  const tokens = script.split(/(\s+)/);
+  let wordIdx = 0;
+  tokens.forEach(tok => {
+    for (let i = 0; i < tok.length; i++) {
+      charToWord[charIdx + i] = /^\s+$/.test(tok) ? -1 : wordIdx;
+    }
+    charIdx += tok.length;
+    if (!/^\s+$/.test(tok)) wordIdx++;
+  });
+
+  u.onboundary = (e) => {
+    if (e.name !== 'word') return;
+    const wIdx = charToWord[e.charIndex];
+    if (wIdx == null || wIdx < 0) return;
+    wordEls.forEach((el, i) => {
+      el.classList.remove('current');
+      if (i < wIdx) el.classList.add('spoken');
+      else if (i === wIdx) {
+        el.classList.add('current');
+        try { el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e2) {}
+      } else {
+        el.classList.remove('spoken');
+      }
+    });
+  };
+
+  u.onstart = () => {
+    BRIEFING_STATE.playing = true;
+    BRIEFING_STATE.startTime = Date.now();
+    document.getElementById('briefing-icon-play').style.display = 'none';
+    document.getElementById('briefing-icon-pause').style.display = 'block';
+    document.getElementById('briefing-play').classList.add('playing');
+    document.getElementById('briefing-status').textContent = 'Playing…';
+    document.getElementById('briefing-progress').classList.add('active');
+    document.getElementById('briefing-script').classList.add('expanded');
+    animateBriefingProgress();
+  };
+
+  u.onend = () => { finishBriefing(); };
+  u.onerror = (e) => {
+    console.error('TTS error', e);
+    document.getElementById('briefing-status').textContent = 'Audio error — try again';
+    finishBriefing();
+  };
+
+  BRIEFING_STATE.utterance = u;
+  window.speechSynthesis.cancel();
+  setTimeout(() => window.speechSynthesis.speak(u), 50);
+}
+
+function stopBriefing() {
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+  finishBriefing();
+}
+
+function finishBriefing() {
+  BRIEFING_STATE.playing = false;
+  document.getElementById('briefing-icon-play').style.display = 'block';
+  document.getElementById('briefing-icon-pause').style.display = 'none';
+  document.getElementById('briefing-play').classList.remove('playing');
+  document.getElementById('briefing-status').textContent = `~${BRIEFING_STATE.estDuration}s · tap play`;
+  document.getElementById('briefing-progress-fill').style.width = '0';
+  document.getElementById('briefing-progress').classList.remove('active');
+  document.querySelectorAll('.briefing-script .word').forEach(el => {
+    el.classList.remove('spoken');
+    el.classList.remove('current');
+  });
+}
+
+function animateBriefingProgress() {
+  if (!BRIEFING_STATE.playing) return;
+  const elapsed = (Date.now() - BRIEFING_STATE.startTime) / 1000;
+  const pct = Math.min(100, (elapsed / BRIEFING_STATE.estDuration) * 100);
+  document.getElementById('briefing-progress-fill').style.width = pct + '%';
+  if (pct < 100) requestAnimationFrame(animateBriefingProgress);
+}
+
+// Pre-load voices on iOS (they sometimes load asynchronously)
+if ('speechSynthesis' in window) {
+  window.speechSynthesis.getVoices();
+  if (typeof speechSynthesis.onvoiceschanged !== 'undefined') {
+    speechSynthesis.onvoiceschanged = () => { /* voices ready */ };
+  }
+}
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+setInterval(() => {
+  if (document.visibilityState === 'visible' && localStorage.getItem(KEY)) load();
+}, 120000);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && localStorage.getItem(KEY)) load();
+});
+
+// Tap brand = go home (Pulse tab). Long-press 1.5s = reset connection.
+(function setupBrandActions() {
+  const brand = document.getElementById('brand');
+  if (!brand) return;
+  let timer = null;
+  let longPressed = false;
+
+  const start = () => {
+    longPressed = false;
+    timer = setTimeout(() => {
+      longPressed = true;
+      if (confirm('Reset connection? You\'ll need to paste the CSV URL again.')) {
+        localStorage.removeItem(KEY);
+        location.reload();
+      }
+    }, 1500);
+  };
+  const cancelTimer = () => { if (timer) { clearTimeout(timer); timer = null; } };
+  const release = (e) => {
+    cancelTimer();
+    // If it wasn't a long press, treat as a tap → go to Pulse tab
+    if (!longPressed) {
+      e.preventDefault();
+      showScreen('pulse');
+    }
+  };
+
+  brand.addEventListener('touchstart', start, { passive: true });
+  brand.addEventListener('touchend', release);
+  brand.addEventListener('touchmove', cancelTimer);
+  brand.addEventListener('touchcancel', cancelTimer);
+  brand.addEventListener('mousedown', start);
+  brand.addEventListener('mouseup', release);
+  brand.addEventListener('mouseleave', cancelTimer);
+})();
+
+load();
+</script>
+</body>
+</html>
